@@ -44,7 +44,7 @@ bitmap::~bitmap()
 {
 	delete[] pixels;
 }
-void bitmap::save(const char* path)
+void bitmap::save(const char* path, rgb32*** pixelMatrix)
 {
 	std::ofstream file(path, std::ios::out | std::ios::binary);
 	if (file)
@@ -60,13 +60,14 @@ void bitmap::save(const char* path)
 		{
 			for (int j = 0; j < header.iHeader.biWidth; ++j)
 			{
-				*(out++) = in->b;
-				*(out++) = in->g;
-				*(out++) = in->r;
+				*(out++) = pixelMatrix[i][j]->b;
+				*(out++) = pixelMatrix[i][j]->g;
+				*(out++) = pixelMatrix[i][j]->r;
 				++in;
 			}
 		}
 		file.write(reinterpret_cast<char*>(&temp[0]), header.fHeader.bfSize - header.fHeader.bfOffBits);
+		pixels = new uint8_t[header.fHeader.bfSize - header.fHeader.bfOffBits];
 		delete[] temp;
 	}
 }
@@ -88,3 +89,4 @@ uint32_t bitmap::getHeight() const
 {
 	return header.iHeader.biHeight;
 }
+
