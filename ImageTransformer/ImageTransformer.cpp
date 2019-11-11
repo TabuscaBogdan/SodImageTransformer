@@ -1,53 +1,28 @@
 #include <iostream>
-#include "PixelColoring.h"
+#include "bitmap.h"
+#include "RgbMatrix.h"
 
-rgb32 ***PixelMatrix(bitmap bmp)
-{
-	int rows = bmp.getHeight();
-	int columns = bmp.getWidth();
-	int i, j;
+void MakeSepia(RgbMatrix &m) {
+    for (int i = 0; i < m.Rows(); ++i) {
+        for (int j = 0; j < m.Cols(); ++j) {
+            float r = (m(i, j).r * 0.393f) + (m(i, j).g * 0.769f) + (m(i, j).b * 0.189f);
+            float g = (m(i, j).r * 0.349f) + (m(i, j).g * 0.686f) + (m(i, j).b * 0.168f);
+            float b = (m(i, j).r * 0.272f) + (m(i, j).g * 0.534f) + (m(i, j).b * 0.131f);
 
-	rgb32*** pixelMatrix = new rgb32**[rows];
-	for(i=0; i<rows; ++i)
-	{
-		pixelMatrix[i] = new rgb32 * [columns];
-	}
-
-	for(i=0; i<rows; ++i)
-		for(j=0; j<columns; ++j)
-		{
-			rgb32* pixel = new rgb32;
-			memcpy(pixel, bmp.getPixel(i, j), sizeof(rgb32));
-			pixelMatrix[i][j] = pixel;
-		}
-
-	return  pixelMatrix;
+            m(i, j).r = uint8_t(std::min(r, 255.0f));
+            m(i, j).g = uint8_t(std::min(g, 255.0f));
+            m(i, j).b = uint8_t(std::min(b, 255.0f));
+        }
+    }
 }
 
-void MakeSepia(rgb32*** pixelMatrix, int rows, int columns)
-{
-	int i, j;
-	for(i=0;i<rows;++i)
-		for(j=0;j<columns;++j)
-		{
-			pixelMatrix[i][j]->r = unsigned char(pixelMatrix[i][j]->r * 0.393f)+ unsigned char(pixelMatrix[i][j]->g * 0.769f) + unsigned char(pixelMatrix[i][j]->b * 0.189f);
-			pixelMatrix[i][j]->g = unsigned char(pixelMatrix[i][j]->r * 0.349f) + unsigned char(pixelMatrix[i][j]->g * 0.686f) + unsigned char(pixelMatrix[i][j]->b * 0.168f);
-			pixelMatrix[i][j]->b = unsigned char(pixelMatrix[i][j]->r * 0.272f) + unsigned char(pixelMatrix[i][j]->g * 0.534f) + unsigned char(pixelMatrix[i][j]->b * 0.131f);
-		}
-}
+int main() {
+    bitmap bmp{"../data/sunflower.bmp"};
 
-int main()
-{
-	bitmap bmp{ "C:\\Faculta\\Sod\\BitmapSunflower.bmp" };
-	int rows, columns;
-	rgb32*** pixelMatrix;
+    RgbMatrix m{bmp};
+    MakeSepia(m);
 
-	rows = bmp.getHeight();
-	columns = bmp.getWidth();
-	pixelMatrix = PixelMatrix(bmp);
+    m.ToBitmap(&bmp);
 
-	MakeSepia(pixelMatrix, rows, columns);
-
-
-	bmp.save("C:\\Faculta\\Sod\\BitmapSunflowerCPY.bmp",pixelMatrix);
+    bmp.save("../data/sunflower_sepia.bmp");
 }

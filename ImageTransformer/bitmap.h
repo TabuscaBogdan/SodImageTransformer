@@ -46,9 +46,9 @@ private:
 	bitmap_header header;
 	uint8_t* pixels;
 public:
-	bitmap(const char* path);
+	explicit bitmap(const char* path);
 	~bitmap();
-	void save(const char* path,rgb32*** pixelMatrix);
+	void save(const char* path);
 	rgb32* getPixel(uint32_t x, uint32_t y) const;
 	void setPixel(rgb32* pixel, uint32_t x, uint32_t y);
 	uint32_t getWidth() const;
