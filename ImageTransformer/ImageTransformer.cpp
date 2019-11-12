@@ -3,11 +3,31 @@
 #include "RgbMatrix.h"
 #include <algorithm>
 #include <omp.h>
+#include <string>
 
 
 using namespace std;
 
 const double pi = 3.14159265358979323846;
+const int base_thread_numbers = 4;
+
+void SetNumberOfThreads(int argc, char* argv[])
+{
+	int numberOfThreads = base_thread_numbers;
+	if (argc > 1)
+	{
+		try
+		{
+			numberOfThreads = stoi(argv[1]);
+		}
+		catch (...)
+		{
+			cout << "Program will run on base number of threads (4)" << endl;
+		}
+	}
+
+	omp_set_num_threads(numberOfThreads);
+}
 
 void MakeSepia(RgbMatrix &m) {
     for (int i = 0; i < m.Rows(); ++i) {
@@ -32,7 +52,7 @@ void MakeBlur(RgbMatrix &pixelMatrix, int radius=2)
 	}
 
 	int i,j;
-	omp_set_num_threads(16);
+	
 	#pragma omp parallel for collapse(2) private(i,j)
 	for(i=0; i<pixelMatrix.Rows(); ++i)
 		for(j=0; j<pixelMatrix.Cols(); ++j)
@@ -40,13 +60,13 @@ void MakeBlur(RgbMatrix &pixelMatrix, int radius=2)
 			double val_red = 0, val_blue = 0, val_green = 0, val_alpha=0;
 			double wsum = 0;
 
-			for(int iy = i-radius*2; iy <i+radius+10; ++iy)
-				for(int ix = j-radius*2;ix<j+radius+10; ++ix)
+			for(int iy = i-radius; iy <i+radius+1; ++iy)
+				for(int ix = j-radius;ix<j+radius+1; ++ix)
 				{
-					int x = min(pixelMatrix.Cols() - 10, max(0, ix));
-					int y = min(pixelMatrix.Rows() - 10, max(0, iy));
+					int x = min(pixelMatrix.Cols() - 1, max(0, ix));
+					int y = min(pixelMatrix.Rows() - 1, max(0, iy));
 					int dsq = (ix - j)* (ix - j) + (iy - i) * (iy - i);
-					double weight = exp(-dsq / 8 * radius * radius) / (pi * 8 * radius * radius);
+					double weight = exp(-dsq / (2 * radius * radius)) / (pi * 2 * radius * radius);
 					val_red += pixelMatrix(y, x).r * weight;
 					val_green += pixelMatrix(y, x).g * weight;
 					val_blue += pixelMatrix(y, x).b * weight;
@@ -62,7 +82,10 @@ void MakeBlur(RgbMatrix &pixelMatrix, int radius=2)
 		}
 }
 
-int main() {
+int main(int argc, char* argv[]) {
+
+	SetNumberOfThreads(argc, argv);
+
     bitmap bmp{"../data/sunflower.bmp"};
 
     RgbMatrix m{bmp};
