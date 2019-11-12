@@ -4,6 +4,7 @@
 
 #ifndef SODIMAGETRANSFORMER_RGBMATRIX_H
 #define SODIMAGETRANSFORMER_RGBMATRIX_H
+#pragma once
 
 #include <vector>
 #include <cstring>

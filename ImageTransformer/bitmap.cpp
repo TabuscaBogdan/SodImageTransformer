@@ -64,7 +64,8 @@ void bitmap::save(const char *path) {
                 ++in;
             }
         }
-        file.write(reinterpret_cast<char *>(&temp[0]), header.fHeader.bfSize - header.fHeader.bfOffBits);
+
+    	file.write(reinterpret_cast<char *>(&temp[0]), header.fHeader.bfSize - header.fHeader.bfOffBits);
         delete[] temp;
     }
 }
