@@ -82,6 +82,82 @@ void MakeBlur(RgbMatrix &pixelMatrix, int radius=2)
 		}
 }
 
+void MakeSwirl(RgbMatrix& pixelMatrix, double factor)
+{
+	int width = pixelMatrix.Cols();
+	int height = pixelMatrix.Rows();
+
+	double cX = (double)width / 2.0f;
+	double cY = (double)height / 2.0f;
+
+	RgbMatrix cpyMatrix(pixelMatrix);
+
+	#pragma omp parallel for
+	for (int i = 0; i < height; i++)
+	{
+		double relY = cY - i;
+		for (int j = 0; j < width; j++)
+		{
+			double relX = j - cX;
+			// relX and relY are points in our UV space
+			// Calculate the angle our points are relative to UV origin. Everything is in radians.
+			double originalAngle;
+
+			if (relX != 0)
+			{
+				originalAngle = atan(abs(relY) / abs(relX));
+				if (relX > 0 && relY < 0) 
+					originalAngle = 2.0f * pi - originalAngle;
+				else 
+					if (relX <= 0 && relY >= 0) 
+						originalAngle = pi - originalAngle;
+					else 
+						if (relX <= 0 && relY < 0) 
+							originalAngle += pi;
+			}
+			else
+			{
+				// Take care of rare special case
+				if (relY >= 0) 
+					originalAngle = 0.5f * pi;
+				else 
+					originalAngle = 1.5f * pi;
+			}
+			// Calculate the distance from the center of the UV using pythagorean distance
+			double radius = sqrt(relX * relX + relY * relY);
+
+			// Use any equation we want to determine how much to rotate image by
+			//double newAngle = originalAngle + factor*radius;	// a progressive twist
+			double newAngle = originalAngle + 1 / (factor * radius + (4.0f / pi));
+			// Transform source UV coordinates back into bitmap coordinates
+			int srcX = (int)(floor(radius * cos(newAngle) + 0.5f));
+			int srcY = (int)(floor(radius * sin(newAngle) + 0.5f));
+
+			srcX += cX;
+			srcY += cY;
+			srcY = height - srcY;
+
+			if (srcX < 0) 
+				srcX = 0;
+			else 
+				if (srcX >= width) 
+					srcX = width - 1;
+			if (srcY < 0) 
+				srcY = 0;
+			else 
+				if (srcY >= height) 
+					srcY = height - 1;
+
+			// Set the pixel color
+			pixelMatrix(i, j).r = cpyMatrix(srcY, srcX).r;
+			pixelMatrix(i, j).g = cpyMatrix(srcY, srcX).g;
+			pixelMatrix(i, j).b = cpyMatrix(srcY, srcX).b;
+			pixelMatrix(i, j).a = cpyMatrix(srcY, srcX).a;
+			
+		}
+	}
+}
+
 int main(int argc, char* argv[]) {
 
 	SetNumberOfThreads(argc, argv);
@@ -90,10 +166,11 @@ int main(int argc, char* argv[]) {
 
     RgbMatrix m{bmp};
 	auto start = omp_get_wtime();
-    MakeBlur(m,10);
+    //MakeBlur(m,10);
+	MakeSwirl(m, 0.001);
 	auto stop = omp_get_wtime();
 	cout << "Time Taken:" << stop - start<<endl;
     m.ToBitmap(&bmp);
 
-    bmp.save("../data/sunflower_blur.bmp");
+    bmp.save("../data/sunflower_swirl.bmp");
 }
