@@ -19,7 +19,7 @@ public:
         Resize(rows, cols);
     }
     explicit RgbMatrix(const bitmap& bm) {
-        Resize(bm.getHeight(), bm.getWidth());
+        Resize(bm.getWidth(), bm.getHeight());
 
         for (int row = 0; row < _rows; ++row) {
             for (int col = 0; col < _cols; ++col) {

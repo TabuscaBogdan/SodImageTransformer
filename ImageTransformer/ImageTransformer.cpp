@@ -169,19 +169,19 @@ int main(int argc, char* argv[]) {
 
 	SetNumberOfThreads(argc, argv);
 
-    bitmap bmp{"../data/sunflower.bmp"};
+    bitmap bmp{"../data/berk.bmp"};
 
     RgbMatrix m{bmp};
     RgbMatrix mDst(m.Rows(), m.Cols());
 
 	auto start = omp_get_wtime();
-//    MakeBlur(mDst, m,10);
-	MakeSwirl(mDst, m, 0.001);
+    MakeBlur(mDst, m,10);
+//	MakeSwirl(mDst, m, 0.001);
 	auto stop = omp_get_wtime();
     cout << "Time Taken:" << stop - start << '\n';
     mDst.ToBitmap(&bmp);
 
-    bmp.save("../data/sunflower_swirl.bmp");
+    bmp.save("../data/berk_blur.bmp");
 }
 
 #pragma clang diagnostic pop
