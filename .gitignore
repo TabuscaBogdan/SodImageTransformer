@@ -342,3 +342,4 @@ healthchecksdb
 # idea stuff
 CMakeLists.txt
 cmake-build-debug/
+cmake-build-release/
