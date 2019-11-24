@@ -9,8 +9,12 @@
 #include <vector>
 #include <cstring>
 #include <cassert>
+#include <stb/stb_image.h>
+#include <stb/stb_image_write.h>
 
 #include "bitmap.h"
+
+const int NUM_CHANNELS = 3;
 
 class RgbMatrix {
 public:
@@ -28,8 +32,49 @@ public:
             }
         }
     }
+    explicit RgbMatrix(const char* path) {
+        ReadFromFile(path);
+    }
     RgbMatrix(const RgbMatrix&) = default;
     RgbMatrix& operator= (const RgbMatrix&) = default;
+
+    void ReadFromFile(const char* path) {
+        int width, height, bpp;
+        uint8_t* rgbImg = stbi_load(path, &width, &height, &bpp, NUM_CHANNELS);
+
+        assert(bpp == NUM_CHANNELS);
+
+        Resize(height, width);
+        for (int i = 0; i < height; ++i) {
+            for (int j = 0; j < width; ++j) {
+                (*this)(i, j).r = rgbImg[(i * width + j) * NUM_CHANNELS + 0];
+                (*this)(i, j).g = rgbImg[(i * width + j) * NUM_CHANNELS + 1];
+                (*this)(i, j).b = rgbImg[(i * width + j) * NUM_CHANNELS + 2];
+                (*this)(i, j).a = 0;
+            }
+        }
+
+        stbi_image_free(rgbImg);
+    }
+
+    void SaveAsPng(const char* path) const {
+        int width = Cols();
+        int height = Rows();
+
+        std::vector<uint8_t> data;
+        data.reserve(width * height * NUM_CHANNELS);
+
+        for (int i = 0; i < height; ++i) {
+            for (int j = 0; j < width; ++j) {
+                data.push_back((*this)(i, j).r);
+                data.push_back((*this)(i, j).g);
+                data.push_back((*this)(i, j).b);
+            }
+        }
+
+        int stride = width * NUM_CHANNELS;
+        stbi_write_png(path, width, height, NUM_CHANNELS, &data[0], stride);
+    }
 
     void ToBitmap(bitmap* bm) const {
         assert(bm->getWidth() == _rows);

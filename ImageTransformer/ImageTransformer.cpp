@@ -1,6 +1,3 @@
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "openmp-use-default-none"
-
 #include <algorithm>
 #include <iostream>
 #include <string>
@@ -8,9 +5,13 @@
 #include <omp.h>
 #include <cmath>
 
-#include "bitmap.h"
 #include "RgbMatrix.h"
 
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb/stb_image_write.h"
+
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb/stb_image.h"
 
 using namespace std;
 
@@ -178,19 +179,42 @@ int main(int argc, char* argv[]) {
 
 	SetNumberOfThreads(argc, argv);
 
-    bitmap bmp{"../data/berk.bmp"};
+	const string DATA_DIR = "../data/";
+    const string FUNC = "sepia";
+	const string IMAGE = "sunflower";
+	const string SRC_EXT = ".bmp";
+	const string DST_EXT = ".png";
+	assert(DST_EXT == ".png"); // Because we currently only save as PNG.
 
-    RgbMatrix m{bmp};
+	const string srcImg = DATA_DIR + IMAGE + SRC_EXT;
+	const string dstImg = DATA_DIR + IMAGE + "_" + FUNC + DST_EXT;
+
+    RgbMatrix m(srcImg.c_str());
     RgbMatrix mDst(m.Rows(), m.Cols());
 
-	auto start = omp_get_wtime();
-    MakeBlur(mDst, m,10);
-//	MakeSwirl(mDst, m, 0.00000);
-	auto stop = omp_get_wtime();
-    cout << "Time Taken:" << stop - start << '\n';
-    mDst.ToBitmap(&bmp);
+	double start = -1;
+	double stop = -1;
 
-    bmp.save("../data/berk_blur.bmp");
+	if (FUNC == "blur") {
+        start = omp_get_wtime();
+        MakeBlur(mDst, m,10);
+        stop = omp_get_wtime();
+	} else if (FUNC == "swirl") {
+        start = omp_get_wtime();
+        MakeSwirl(mDst, m,0.001);
+        stop = omp_get_wtime();
+	} else if (FUNC == "sepia") {
+	    mDst = m;
+        start = omp_get_wtime();
+        MakeSepia(mDst);
+        stop = omp_get_wtime();
+	} else {
+	    cout << "Unknown func '" << FUNC << "'\n";
+	    return 1;
+	}
+
+	assert(start != -1 && stop != -1);
+    cout << "Time taken for '" << FUNC << "' on '" << IMAGE << "':" << stop - start << '\n';
+    mDst.SaveAsPng(dstImg.c_str());
 }
 
-#pragma clang diagnostic pop
