@@ -1,15 +1,33 @@
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "openmp-use-default-none"
+
+#include <algorithm>
 #include <iostream>
+#include <string>
+
+#include <omp.h>
+#include <cmath>
+
 #include "bitmap.h"
 #include "RgbMatrix.h"
-#include <algorithm>
-#include <omp.h>
-#include <string>
 
 
 using namespace std;
 
 const double pi = 3.14159265358979323846;
 const int base_thread_numbers = 4;
+
+int Clamp(int val, int min, int max) {
+    assert(min < max);
+
+    if (val < min) {
+        val = min;
+    }
+    if (val > max) {
+        val = max;
+    }
+    return val;
+}
 
 void SetNumberOfThreads(int argc, char* argv[])
 {
@@ -43,54 +61,52 @@ void MakeSepia(RgbMatrix &m) {
     }
 }
 
-void MakeBlur(RgbMatrix &pixelMatrix, int radius=2)
-{
-	if(radius < 2)
-	{
-		cout << "Radius is too small";
-		return;
-	}
+void MakeBlur(RgbMatrix& dst, const RgbMatrix& src, int radius = 2) {
+    assert (dst.Rows() == src.Rows() && dst.Cols() == src.Cols());
 
-	int i,j;
-	
-	#pragma omp parallel for collapse(2) private(i,j)
-	for(i=0; i<pixelMatrix.Rows(); ++i)
-		for(j=0; j<pixelMatrix.Cols(); ++j)
-		{
-			double val_red = 0, val_blue = 0, val_green = 0, val_alpha=0;
-			double wsum = 0;
+    if (radius < 2) {
+        cout << "Radius is too small";
+        return;
+    }
 
-			for(int iy = i-radius; iy <i+radius+1; ++iy)
-				for(int ix = j-radius;ix<j+radius+1; ++ix)
-				{
-					int x = min(pixelMatrix.Cols() - 1, max(0, ix));
-					int y = min(pixelMatrix.Rows() - 1, max(0, iy));
-					int dsq = (ix - j)* (ix - j) + (iy - i) * (iy - i);
-					double weight = exp(-dsq / (2 * radius * radius)) / (pi * 2 * radius * radius);
-					val_red += pixelMatrix(y, x).r * weight;
-					val_green += pixelMatrix(y, x).g * weight;
-					val_blue += pixelMatrix(y, x).b * weight;
-					val_alpha += pixelMatrix(y, x).a * weight;
-					wsum += weight;
-				}
+    int i, j;
 
-				pixelMatrix(i, j).r = val_red / wsum;
-				pixelMatrix(i, j).g = val_green / wsum;
-				pixelMatrix(i, j).b = val_blue / wsum;
-				pixelMatrix(i, j).a = val_alpha / wsum;
-			
-		}
+    #pragma omp parallel for collapse(2) private(i, j)
+    for (i = 0; i < src.Rows(); ++i) {
+        for (j = 0; j < src.Cols(); ++j) {
+            double val_red = 0, val_blue = 0, val_green = 0, val_alpha = 0;
+            double wsum = 0;
+
+            for (int iy = i - radius; iy < i + radius + 1; ++iy)
+                for (int ix = j - radius; ix < j + radius + 1; ++ix) {
+                    int x = min(src.Cols() - 1, max(0, ix));
+                    int y = min(src.Rows() - 1, max(0, iy));
+                    int dsq = (ix - j) * (ix - j) + (iy - i) * (iy - i);
+                    double weight = exp(-dsq / (2 * radius * radius)) / (pi * 2 * radius * radius);
+                    val_red += src(y, x).r * weight;
+                    val_green += src(y, x).g * weight;
+                    val_blue += src(y, x).b * weight;
+                    val_alpha += src(y, x).a * weight;
+                    wsum += weight;
+                }
+
+            dst(i, j).r = val_red / wsum;
+            dst(i, j).g = val_green / wsum;
+            dst(i, j).b = val_blue / wsum;
+            dst(i, j).a = val_alpha / wsum;
+        }
+    }
 }
 
-void MakeSwirl(RgbMatrix& pixelMatrix, double factor)
+void MakeSwirl(RgbMatrix& dst, const RgbMatrix& src, double factor)
 {
-	int width = pixelMatrix.Cols();
-	int height = pixelMatrix.Rows();
+    assert (dst.Rows() == src.Rows() && dst.Cols() == src.Cols());
+
+	int width = src.Cols();
+	int height = src.Rows();
 
 	double cX = (double)width / 2.0f;
 	double cY = (double)height / 2.0f;
-
-	RgbMatrix cpyMatrix(pixelMatrix);
 
 	#pragma omp parallel for
 	for (int i = 0; i < height; i++)
@@ -106,21 +122,21 @@ void MakeSwirl(RgbMatrix& pixelMatrix, double factor)
 			if (relX != 0)
 			{
 				originalAngle = atan(abs(relY) / abs(relX));
-				if (relX > 0 && relY < 0) 
+				if (relX > 0 && relY < 0)
 					originalAngle = 2.0f * pi - originalAngle;
-				else 
-					if (relX <= 0 && relY >= 0) 
+				else
+					if (relX <= 0 && relY >= 0)
 						originalAngle = pi - originalAngle;
-					else 
-						if (relX <= 0 && relY < 0) 
+					else
+						if (relX <= 0 && relY < 0)
 							originalAngle += pi;
 			}
 			else
 			{
 				// Take care of rare special case
-				if (relY >= 0) 
+				if (relY >= 0)
 					originalAngle = 0.5f * pi;
-				else 
+				else
 					originalAngle = 1.5f * pi;
 			}
 			// Calculate the distance from the center of the UV using pythagorean distance
@@ -137,23 +153,14 @@ void MakeSwirl(RgbMatrix& pixelMatrix, double factor)
 			srcY += cY;
 			srcY = height - srcY;
 
-			if (srcX < 0) 
-				srcX = 0;
-			else 
-				if (srcX >= width) 
-					srcX = width - 1;
-			if (srcY < 0) 
-				srcY = 0;
-			else 
-				if (srcY >= height) 
-					srcY = height - 1;
+            srcX = Clamp(srcX, 0, width - 1);
+            srcY = Clamp(srcY, 0, height - 1);
 
 			// Set the pixel color
-			pixelMatrix(i, j).r = cpyMatrix(srcY, srcX).r;
-			pixelMatrix(i, j).g = cpyMatrix(srcY, srcX).g;
-			pixelMatrix(i, j).b = cpyMatrix(srcY, srcX).b;
-			pixelMatrix(i, j).a = cpyMatrix(srcY, srcX).a;
-			
+			dst(i, j).r = src(srcY, srcX).r;
+			dst(i, j).g = src(srcY, srcX).g;
+			dst(i, j).b = src(srcY, srcX).b;
+			dst(i, j).a = src(srcY, srcX).a;
 		}
 	}
 }
@@ -165,12 +172,16 @@ int main(int argc, char* argv[]) {
     bitmap bmp{"../data/sunflower.bmp"};
 
     RgbMatrix m{bmp};
+    RgbMatrix mDst(m.Rows(), m.Cols());
+
 	auto start = omp_get_wtime();
-    //MakeBlur(m,10);
-	MakeSwirl(m, 0.001);
+//    MakeBlur(mDst, m,10);
+	MakeSwirl(mDst, m, 0.001);
 	auto stop = omp_get_wtime();
-	cout << "Time Taken:" << stop - start<<endl;
-    m.ToBitmap(&bmp);
+    cout << "Time Taken:" << stop - start << '\n';
+    mDst.ToBitmap(&bmp);
 
     bmp.save("../data/sunflower_swirl.bmp");
 }
+
+#pragma clang diagnostic pop
