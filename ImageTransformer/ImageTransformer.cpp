@@ -14,8 +14,8 @@
 
 using namespace std;
 
-const double pi = 3.14159265358979323846;
-const int base_thread_numbers = 4;
+const double PI = 3.14159265358979323846;
+const int DEFAULT_NUM_THREADS = 4;
 
 int Clamp(int val, int min, int max) {
     assert(min < max);
@@ -31,7 +31,7 @@ int Clamp(int val, int min, int max) {
 
 void SetNumberOfThreads(int argc, char* argv[])
 {
-	int numberOfThreads = base_thread_numbers;
+	int numberOfThreads = DEFAULT_NUM_THREADS;
 	if (argc > 1)
 	{
 		try
@@ -69,6 +69,17 @@ void MakeBlur(RgbMatrix& dst, const RgbMatrix& src, int radius = 2) {
         return;
     }
 
+    // Precompute the weights matrix.
+    double weights[radius + 1][radius + 1];
+    for (int i = 0; i <= radius; ++i) {
+        for (int j = 0; j <= radius; ++j) {
+            int dsq = i*i + j*j;
+            double weight = exp(-dsq / (2 * radius * radius)) / (PI * 2 * radius * radius);
+
+            weights[i][j] = weight;
+        }
+    }
+
     int i, j;
 
     #pragma omp parallel for collapse(2) private(i, j)
@@ -77,18 +88,19 @@ void MakeBlur(RgbMatrix& dst, const RgbMatrix& src, int radius = 2) {
             double val_red = 0, val_blue = 0, val_green = 0, val_alpha = 0;
             double wsum = 0;
 
-            for (int iy = i - radius; iy < i + radius + 1; ++iy)
-                for (int ix = j - radius; ix < j + radius + 1; ++ix) {
-                    int x = min(src.Cols() - 1, max(0, ix));
-                    int y = min(src.Rows() - 1, max(0, iy));
-                    int dsq = (ix - j) * (ix - j) + (iy - i) * (iy - i);
-                    double weight = exp(-dsq / (2 * radius * radius)) / (pi * 2 * radius * radius);
+            for (int di = -radius; di < radius + 1; ++di) {
+                for (int dj = -radius; dj < radius + 1; ++dj) {
+                    int x = Clamp(j + dj, 0, src.Cols() - 1);
+                    int y = Clamp(i + di, 0, src.Rows() - 1);
+                    double weight = weights[abs(di)][abs(dj)];
+
                     val_red += src(y, x).r * weight;
                     val_green += src(y, x).g * weight;
                     val_blue += src(y, x).b * weight;
                     val_alpha += src(y, x).a * weight;
                     wsum += weight;
                 }
+            }
 
             dst(i, j).r = val_red / wsum;
             dst(i, j).g = val_green / wsum;
@@ -123,28 +135,28 @@ void MakeSwirl(RgbMatrix& dst, const RgbMatrix& src, double factor)
 			{
 				originalAngle = atan(abs(relY) / abs(relX));
 				if (relX > 0 && relY < 0)
-					originalAngle = 2.0f * pi - originalAngle;
+					originalAngle = 2.0f * PI - originalAngle;
 				else
 					if (relX <= 0 && relY >= 0)
-						originalAngle = pi - originalAngle;
+						originalAngle = PI - originalAngle;
 					else
 						if (relX <= 0 && relY < 0)
-							originalAngle += pi;
+							originalAngle += PI;
 			}
 			else
 			{
 				// Take care of rare special case
 				if (relY >= 0)
-					originalAngle = 0.5f * pi;
+					originalAngle = 0.5f * PI;
 				else
-					originalAngle = 1.5f * pi;
+					originalAngle = 1.5f * PI;
 			}
 			// Calculate the distance from the center of the UV using pythagorean distance
 			double radius = sqrt(relX * relX + relY * relY);
 
 			// Use any equation we want to determine how much to rotate image by
 			//double newAngle = originalAngle + factor*radius;	// a progressive twist
-			double newAngle = originalAngle + 1 / (factor * radius + (4.0f / pi));
+			double newAngle = originalAngle + 1 / (factor * radius + (4.0f / PI));
 			// Transform source UV coordinates back into bitmap coordinates
 			int srcX = (int)(floor(radius * cos(newAngle) + 0.5f));
 			int srcY = (int)(floor(radius * sin(newAngle) + 0.5f));
@@ -157,10 +169,7 @@ void MakeSwirl(RgbMatrix& dst, const RgbMatrix& src, double factor)
             srcY = Clamp(srcY, 0, height - 1);
 
 			// Set the pixel color
-			dst(i, j).r = src(srcY, srcX).r;
-			dst(i, j).g = src(srcY, srcX).g;
-			dst(i, j).b = src(srcY, srcX).b;
-			dst(i, j).a = src(srcY, srcX).a;
+            dst(i, j) = src(srcY, srcX);
 		}
 	}
 }
@@ -176,7 +185,7 @@ int main(int argc, char* argv[]) {
 
 	auto start = omp_get_wtime();
     MakeBlur(mDst, m,10);
-//	MakeSwirl(mDst, m, 0.001);
+//	MakeSwirl(mDst, m, 0.00000);
 	auto stop = omp_get_wtime();
     cout << "Time Taken:" << stop - start << '\n';
     mDst.ToBitmap(&bmp);
