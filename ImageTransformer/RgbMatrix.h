@@ -9,6 +9,7 @@
 #include <vector>
 #include <cstring>
 #include <cassert>
+#include <iostream>
 #include "stb_image.h"
 #include "stb_image_write.h"
 
@@ -42,7 +43,9 @@ public:
         int width, height, bpp;
         uint8_t* rgbImg = stbi_load(path, &width, &height, &bpp, NUM_CHANNELS);
 
-        assert(bpp == NUM_CHANNELS);
+        if (bpp != NUM_CHANNELS) {
+            std::cout << "File has num_channels=" << bpp << ", using num_channels=" << NUM_CHANNELS << '\n';
+        }
 
         Resize(height, width);
         for (int i = 0; i < height; ++i) {
