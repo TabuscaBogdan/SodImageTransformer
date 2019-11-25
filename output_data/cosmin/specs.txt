@@ -1,0 +1,2 @@
+CPU: i7 @ 2.6GHz, dual-core, 4 virtual cores
+RAM: 8GB RAM DDR3 @ 1600MHz
