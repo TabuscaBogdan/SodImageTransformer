@@ -194,9 +194,10 @@ void log(const string& func, const string& img, int nt, double time) {
 int main(int argc, char* argv[]) {
     const string DATA_DIR = "../data/";
     const string FUNCS[] = {"sepia", "blur", "swirl"};
-    const string IMAGE = "13583x5417";
-    const string SRC_EXT = ".jpg";
+    const string IMAGE = "600x600";
+    const string SRC_EXT = ".bmp";
     const string DST_EXT = ".png";
+    const int RUNS_PER_FUNC = 3;
     const bool SAVE = false;
     assert(DST_EXT == ".png"); // Because we currently only save as PNG.
 
@@ -219,30 +220,35 @@ int main(int argc, char* argv[]) {
             dstImgs.push_back(DATA_DIR + IMAGE + "_" + func + DST_EXT);
         }
 
-        start = omp_get_wtime();
-        mDst = m;
-        MakeSepia(mDst);
-        stop = omp_get_wtime();
-        if (SAVE) {
-            mDst.SaveAsPng(dstImgs[0].c_str());
-        }
-        log(FUNCS[0], IMAGE, nt, stop - start);
+        for (int run = 0; run < RUNS_PER_FUNC; ++run) {
+            // Sepia
+            start = omp_get_wtime();
+            mDst = m;
+            MakeSepia(mDst);
+            stop = omp_get_wtime();
+            if (SAVE) {
+                mDst.SaveAsPng(dstImgs[0].c_str());
+            }
+            log(FUNCS[0], IMAGE, nt, stop - start);
 
-        start = omp_get_wtime();
-        MakeBlur(mDst, m, 5);
-        stop = omp_get_wtime();
-        if (SAVE) {
-            mDst.SaveAsPng(dstImgs[1].c_str());
-        }
-        log(FUNCS[1], IMAGE, nt, stop - start);
+            // Blur
+            start = omp_get_wtime();
+            MakeBlur(mDst, m, 5);
+            stop = omp_get_wtime();
+            if (SAVE) {
+                mDst.SaveAsPng(dstImgs[1].c_str());
+            }
+            log(FUNCS[1], IMAGE, nt, stop - start);
 
-        start = omp_get_wtime();
-        MakeSwirl(mDst, m, 0.001);
-        stop = omp_get_wtime();
-        if (SAVE) {
-            mDst.SaveAsPng(dstImgs[2].c_str());
+            // Swirl
+            start = omp_get_wtime();
+            MakeSwirl(mDst, m, 0.001);
+            stop = omp_get_wtime();
+            if (SAVE) {
+                mDst.SaveAsPng(dstImgs[2].c_str());
+            }
+            log(FUNCS[2], IMAGE, nt, stop - start);
         }
-        log(FUNCS[2], IMAGE, nt, stop - start);
     }
 
 	return 0;
