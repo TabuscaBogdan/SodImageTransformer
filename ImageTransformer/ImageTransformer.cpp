@@ -19,8 +19,8 @@ using namespace std;
 
 const double PI = 3.14159265358979323846;
 
-//ofstream fout("../output_data/out_13583x5417.csv");
-//#define cout fout
+ofstream fout("../output_data/bogdan/out_600x600.csv");
+#define cout fout
 
 int Clamp(int val, int min, int max) {
     assert(min < max);
@@ -179,8 +179,8 @@ void log(const string& func, const string& img, int nt, double time) {
 int main(int argc, char* argv[]) {
     const string DATA_DIR = "../data/";
     const string FUNCS[] = {"sepia", "blur", "swirl"};
-    const string IMAGE = "13583x5417";
-    const string SRC_EXT = ".jpg";
+    const string IMAGE = "600x600";
+    const string SRC_EXT = ".bmp";
     const string DST_EXT = ".png";
     const int RUNS_PER_FUNC = 3;
     const bool SAVE = false;

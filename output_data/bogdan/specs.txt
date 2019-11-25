@@ -1,0 +1,3 @@
+CPU 1.8GHz quad core 
+8 logical processors
+16 GB RAM
