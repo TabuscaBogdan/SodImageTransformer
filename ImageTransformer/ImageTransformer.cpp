@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <iostream>
+#include <fstream>
 #include <string>
 
 #include <omp.h>
@@ -17,7 +18,9 @@
 using namespace std;
 
 const double PI = 3.14159265358979323846;
-const int DEFAULT_NUM_THREADS = 4;
+
+//ofstream fout("../output_data/out_13583x5417.csv");
+//#define cout fout
 
 int Clamp(int val, int min, int max) {
     assert(min < max);
@@ -32,24 +35,6 @@ int Clamp(int val, int min, int max) {
 }
 void SetNumberOfThreads(int numThreads) {
     omp_set_num_threads(numThreads);
-}
-
-void SetNumberOfThreads(int argc, char* argv[])
-{
-	int numberOfThreads = DEFAULT_NUM_THREADS;
-	if (argc > 1)
-	{
-		try
-		{
-			numberOfThreads = stoi(argv[1]);
-		}
-		catch (...)
-		{
-			cout << "Program will run on base number of threads (4)" << endl;
-		}
-	}
-
-	omp_set_num_threads(numberOfThreads);
 }
 
 void MakeSepia(RgbMatrix &m) {
@@ -194,8 +179,8 @@ void log(const string& func, const string& img, int nt, double time) {
 int main(int argc, char* argv[]) {
     const string DATA_DIR = "../data/";
     const string FUNCS[] = {"sepia", "blur", "swirl"};
-    const string IMAGE = "600x600";
-    const string SRC_EXT = ".bmp";
+    const string IMAGE = "13583x5417";
+    const string SRC_EXT = ".jpg";
     const string DST_EXT = ".png";
     const int RUNS_PER_FUNC = 3;
     const bool SAVE = false;
@@ -203,11 +188,11 @@ int main(int argc, char* argv[]) {
 
     const string srcImg = DATA_DIR + IMAGE + SRC_EXT;
 
-    cout << "Reading image...\n";
+//    cout << "Reading image...\n";
     RgbMatrix m(srcImg.c_str());
-    cout << "Done reading image.\n";
+//    cout << "Done reading image.\n";
     RgbMatrix mDst(m.Rows(), m.Cols());
-    cout << "Done creating output buffer.\n";
+//    cout << "Done creating output buffer.\n";
 
     for (int nt : {1, 2, 4, 8}) {
         SetNumberOfThreads(nt);
