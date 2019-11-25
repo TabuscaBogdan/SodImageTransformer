@@ -9,9 +9,9 @@
 #include <vector>
 #include <cstring>
 #include <cassert>
-#include <stb/stb_image.h>
-#include <stb/stb_image_write.h>
 
+#include "stb/stb_image.h"
+#include "stb/stb_image_write.h"
 #include "bitmap.h"
 
 const int NUM_CHANNELS = 3;

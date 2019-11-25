@@ -70,8 +70,12 @@ void MakeBlur(RgbMatrix& dst, const RgbMatrix& src, int radius = 2) {
         return;
     }
 
-    // Precompute the weights matrix.
     double weights[radius + 1][radius + 1];
+    
+    // If there's an error with the above declaration, use the below one:
+    // vector<vector<double>> weights(radius + 1, vector<double>(radius + 1));
+
+    // Precompute the weights matrix.
     for (int i = 0; i <= radius; ++i) {
         for (int j = 0; j <= radius; ++j) {
             int dsq = i*i + j*j;
