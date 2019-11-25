@@ -49,8 +49,10 @@ void SetNumberOfThreads(int argc, char* argv[])
 }
 
 void MakeSepia(RgbMatrix &m) {
-    for (int i = 0; i < m.Rows(); ++i) {
-        for (int j = 0; j < m.Cols(); ++j) {
+	int i, j;
+	#pragma omp parallel for private(i,j)
+    for (i = 0; i < m.Rows(); ++i) {
+        for (j = 0; j < m.Cols(); ++j) {
             float r = (m(i, j).r * 0.393f) + (m(i, j).g * 0.769f) + (m(i, j).b * 0.189f);
             float g = (m(i, j).r * 0.349f) + (m(i, j).g * 0.686f) + (m(i, j).b * 0.168f);
             float b = (m(i, j).r * 0.272f) + (m(i, j).g * 0.534f) + (m(i, j).b * 0.131f);
@@ -182,7 +184,7 @@ int main(int argc, char* argv[]) {
 	const string DATA_DIR = "../data/";
 	const int NUMBER_OF_FUNCTIONS = 3;
     const string FUNC[NUMBER_OF_FUNCTIONS] = {"sepia","blur", "swirl"};
-	const string IMAGE = "berk";
+	const string IMAGE = "1980x1080";
 	const string SRC_EXT = ".bmp";
 	const string DST_EXT = ".png";
 	assert(DST_EXT == ".png"); // Because we currently only save as PNG.
