@@ -71,7 +71,7 @@ void MakeBlur(RgbMatrix& dst, const RgbMatrix& src, int radius = 2) {
     }
 
     // Precompute the weights matrix.
-    double weights[radius + 1][radius + 1];
+	vector<vector<double>> weights(radius + 1, vector<double>(radius + 1));
     for (int i = 0; i <= radius; ++i) {
         for (int j = 0; j <= radius; ++j) {
             int dsq = i*i + j*j;
@@ -180,14 +180,19 @@ int main(int argc, char* argv[]) {
 	SetNumberOfThreads(argc, argv);
 
 	const string DATA_DIR = "../data/";
-    const string FUNC = "sepia";
-	const string IMAGE = "sunflower";
+	const int NUMBER_OF_FUNCTIONS = 3;
+    const string FUNC[NUMBER_OF_FUNCTIONS] = {"sepia","blur", "swirl"};
+	const string IMAGE = "berk";
 	const string SRC_EXT = ".bmp";
 	const string DST_EXT = ".png";
 	assert(DST_EXT == ".png"); // Because we currently only save as PNG.
 
 	const string srcImg = DATA_DIR + IMAGE + SRC_EXT;
-	const string dstImg = DATA_DIR + IMAGE + "_" + FUNC + DST_EXT;
+	vector<string> dstImg;
+	for(int i=0;i<NUMBER_OF_FUNCTIONS;++i)
+	{
+		dstImg.push_back(DATA_DIR + IMAGE + "_" + FUNC[i] + DST_EXT);
+	}
 
     RgbMatrix m(srcImg.c_str());
     RgbMatrix mDst(m.Rows(), m.Cols());
@@ -195,26 +200,25 @@ int main(int argc, char* argv[]) {
 	double start = -1;
 	double stop = -1;
 
-	if (FUNC == "blur") {
-        start = omp_get_wtime();
-        MakeBlur(mDst, m,10);
-        stop = omp_get_wtime();
-	} else if (FUNC == "swirl") {
-        start = omp_get_wtime();
-        MakeSwirl(mDst, m,0.001);
-        stop = omp_get_wtime();
-	} else if (FUNC == "sepia") {
-	    mDst = m;
-        start = omp_get_wtime();
-        MakeSepia(mDst);
-        stop = omp_get_wtime();
-	} else {
-	    cout << "Unknown func '" << FUNC << "'\n";
-	    return 1;
-	}
+	start = omp_get_wtime();
+	mDst = m;
+	MakeSepia(mDst);
+	stop = omp_get_wtime();
+	mDst.SaveAsPng(dstImg[0].c_str());
+	cout << "Time taken for '" << FUNC[0] << "' on '" << IMAGE << "':" << stop - start << '\n';
+	
+	start = omp_get_wtime();
+	MakeBlur(mDst, m, 10);
+	stop = omp_get_wtime();
+	mDst.SaveAsPng(dstImg[1].c_str());
+	cout << "Time taken for '" << FUNC[1] << "' on '" << IMAGE << "':" << stop - start << '\n';
 
-	assert(start != -1 && stop != -1);
-    cout << "Time taken for '" << FUNC << "' on '" << IMAGE << "':" << stop - start << '\n';
-    mDst.SaveAsPng(dstImg.c_str());
+	start = omp_get_wtime();
+	MakeSwirl(mDst, m, 0.001);
+	stop = omp_get_wtime();
+	mDst.SaveAsPng(dstImg[2].c_str());
+	cout << "Time taken for '" << FUNC[2] << "' on '" << IMAGE << "':" << stop - start << '\n';
+
+    
 }
 
