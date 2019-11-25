@@ -4,6 +4,7 @@
 
 #include <omp.h>
 #include <cmath>
+#include <iomanip>
 
 #include "RgbMatrix.h"
 
@@ -28,6 +29,9 @@ int Clamp(int val, int min, int max) {
         val = max;
     }
     return val;
+}
+void SetNumberOfThreads(int numThreads) {
+    omp_set_num_threads(numThreads);
 }
 
 void SetNumberOfThreads(int argc, char* argv[])
@@ -177,50 +181,70 @@ void MakeSwirl(RgbMatrix& dst, const RgbMatrix& src, double factor)
 	}
 }
 
+void log(const string& func, const string& img, int nt, double time) {
+    cout << fixed << setprecision(5);
+//    cout << "Time taken for " << nt << " threads"  << " on '" << func << "' on '" << img << "':" << time << '\n';
+    const char* SEP = ",";
+    cout << nt << SEP <<
+            func << SEP <<
+            img << SEP <<
+            time << '\n';
+}
+
 int main(int argc, char* argv[]) {
+    const string DATA_DIR = "../data/";
+    const string FUNCS[] = {"sepia", "blur", "swirl"};
+    const string IMAGE = "13583x5417";
+    const string SRC_EXT = ".jpg";
+    const string DST_EXT = ".png";
+    const bool SAVE = false;
+    assert(DST_EXT == ".png"); // Because we currently only save as PNG.
 
-	SetNumberOfThreads(argc, argv);
+    const string srcImg = DATA_DIR + IMAGE + SRC_EXT;
 
-	const string DATA_DIR = "../data/";
-	const int NUMBER_OF_FUNCTIONS = 3;
-    const string FUNC[NUMBER_OF_FUNCTIONS] = {"sepia","blur", "swirl"};
-	const string IMAGE = "1980x1080";
-	const string SRC_EXT = ".bmp";
-	const string DST_EXT = ".png";
-	assert(DST_EXT == ".png"); // Because we currently only save as PNG.
-
-	const string srcImg = DATA_DIR + IMAGE + SRC_EXT;
-	vector<string> dstImg;
-	for(int i=0;i<NUMBER_OF_FUNCTIONS;++i)
-	{
-		dstImg.push_back(DATA_DIR + IMAGE + "_" + FUNC[i] + DST_EXT);
-	}
-
+    cout << "Reading image...\n";
     RgbMatrix m(srcImg.c_str());
+    cout << "Done reading image.\n";
     RgbMatrix mDst(m.Rows(), m.Cols());
+    cout << "Done creating output buffer.\n";
 
-	double start = -1;
-	double stop = -1;
+    for (int nt : {1, 2, 4, 8}) {
+        SetNumberOfThreads(nt);
 
-	start = omp_get_wtime();
-	mDst = m;
-	MakeSepia(mDst);
-	stop = omp_get_wtime();
-	mDst.SaveAsPng(dstImg[0].c_str());
-	cout << "Time taken for '" << FUNC[0] << "' on '" << IMAGE << "':" << stop - start << '\n';
-	
-	start = omp_get_wtime();
-	MakeBlur(mDst, m, 10);
-	stop = omp_get_wtime();
-	mDst.SaveAsPng(dstImg[1].c_str());
-	cout << "Time taken for '" << FUNC[1] << "' on '" << IMAGE << "':" << stop - start << '\n';
+        double start = -1;
+        double stop = -1;
 
-	start = omp_get_wtime();
-	MakeSwirl(mDst, m, 0.001);
-	stop = omp_get_wtime();
-	mDst.SaveAsPng(dstImg[2].c_str());
-	cout << "Time taken for '" << FUNC[2] << "' on '" << IMAGE << "':" << stop - start << '\n';
+        vector<string> dstImgs;
+        for (auto func : FUNCS) {
+            dstImgs.push_back(DATA_DIR + IMAGE + "_" + func + DST_EXT);
+        }
 
-    
+        start = omp_get_wtime();
+        mDst = m;
+        MakeSepia(mDst);
+        stop = omp_get_wtime();
+        if (SAVE) {
+            mDst.SaveAsPng(dstImgs[0].c_str());
+        }
+        log(FUNCS[0], IMAGE, nt, stop - start);
+
+        start = omp_get_wtime();
+        MakeBlur(mDst, m, 5);
+        stop = omp_get_wtime();
+        if (SAVE) {
+            mDst.SaveAsPng(dstImgs[1].c_str());
+        }
+        log(FUNCS[1], IMAGE, nt, stop - start);
+
+        start = omp_get_wtime();
+        MakeSwirl(mDst, m, 0.001);
+        stop = omp_get_wtime();
+        if (SAVE) {
+            mDst.SaveAsPng(dstImgs[2].c_str());
+        }
+        log(FUNCS[2], IMAGE, nt, stop - start);
+    }
+
+	return 0;
 }
 
