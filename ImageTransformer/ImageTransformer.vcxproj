@@ -172,10 +172,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="bitmap.cpp" />
+    <ClCompile Include="operations.cpp" />
     <ClCompile Include="ImageTransformer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="bitmap.h" />
+    <ClInclude Include="operations.h" />
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="stb_image_write.h" />
   </ItemGroup>
