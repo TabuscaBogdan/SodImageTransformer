@@ -1,16 +1,22 @@
 #include <iostream>
 #include <iomanip>
 #include <string>
+#include <variant>
 
 #include <omp.h>
+#include <mpi.h>
 
 #include "RgbMatrix.h"
 #include "operations.h"
+#include "job.h"
+#include "sub_job.h"
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
+
 #include "stb/stb_image_write.h"
 
 #define STB_IMAGE_IMPLEMENTATION
+
 #include "stb/stb_image.h"
 
 using namespace std;
@@ -27,19 +33,19 @@ void log(const string& func, const string& img, int nt, double time) {
 //    cout << "Time taken for " << nt << " threads"  << " on '" << func << "' on '" << img << "':" << time << '\n';
     const char* SEP = ",";
     cout << nt << SEP <<
-            func << SEP <<
-            img << SEP <<
-            time << '\n';
+         func << SEP <<
+         img << SEP <<
+         time << '\n';
 }
 
 int main_single_machine(int argc, char* argv[]) {
-    const string DATA_DIR = "../data/";
-    const string FUNCS[] = {"sepia", "blur", "swirl"};
-    const string IMAGE = "600x600";
-    const string SRC_EXT = ".bmp";
-    const string DST_EXT = ".png";
-    const int RUNS_PER_FUNC = 3;
-    const bool SAVE = false;
+    const string DATA_DIR      = "../data/";
+    const string FUNCS[]       = {"sepia", "blur", "swirl"};
+    const string IMAGE         = "600x600";
+    const string SRC_EXT       = ".bmp";
+    const string DST_EXT       = ".png";
+    const int    RUNS_PER_FUNC = 3;
+    const bool   SAVE          = false;
     assert(DST_EXT == ".png"); // Because we currently only save as PNG.
 
     const string srcImg = DATA_DIR + IMAGE + SRC_EXT;
@@ -54,17 +60,17 @@ int main_single_machine(int argc, char* argv[]) {
         SetNumberOfThreads(nt);
 
         double start = -1;
-        double stop = -1;
+        double stop  = -1;
 
         vector<string> dstImgs;
-        for (auto func : FUNCS) {
+        for (auto      func : FUNCS) {
             dstImgs.push_back(DATA_DIR + IMAGE + "_" + func + DST_EXT);
         }
 
         for (int run = 0; run < RUNS_PER_FUNC; ++run) {
             // Sepia
             start = omp_get_wtime();
-            mDst = m;
+            mDst  = m;
             MakeSepia(mDst);
             stop = omp_get_wtime();
             if (SAVE) {
@@ -92,7 +98,48 @@ int main_single_machine(int argc, char* argv[]) {
         }
     }
 
-	return 0;
+    return 0;
+}
+
+
+int main_multi_machine(int argc, char* argv[]) {
+    MPI_Init(&argc, &argv);
+
+    int id, procCount;
+    MPI_Comm_rank(MPI_COMM_WORLD, &id);
+    MPI_Comm_size(MPI_COMM_WORLD, &procCount);
+
+    if (id == 0) {
+        Operation op;
+        op.OpType  = Operation::BLUR;
+        op.OpParams = BlurParams(5);
+        RgbMatrix m("../data/600x600.bmp");
+
+        Job job(m, op);
+
+        std::vector<MasterSubJob> jobs = job.ComputeJobSplits(procCount);
+
+        for (int workerId = 1; workerId < procCount; ++workerId) {
+            jobs[workerId].SendInput(workerId);
+        }
+
+        jobs[0].ExecuteLocal();
+        for (int workerId = 1; workerId < procCount; ++workerId) {
+            jobs[workerId].RecvOutput(workerId);
+        }
+
+        job.JoinResults(jobs);
+        // TODO: output results
+
+    } else {
+        SlaveSubJob job;
+
+        job.RecvInput(0);
+        job.ExecuteLocal();
+        job.SendOutput(0);
+    }
+
+    MPI_Finalize();
 }
 
 int main(int argc, char* argv[]) {
