@@ -7,6 +7,7 @@
 #include "sub_job.h"
 #include "job.h"
 #include "mpi.h"
+#include "utils.h"
 
 using namespace std;
 
@@ -15,7 +16,7 @@ using namespace std;
 void MasterSubJob::SendInput(int workerId) {
     Header header(Dims, ImgJob.Op);
 
-    constexpr int headerSizeBytes = sizeof(header);
+    const int headerSizeBytes = sizeof(header);
     const int payloadSizeBytes = Dims.Input.ElementsCount() * RgbMatrix::BytesPerElem();
     const int msgSizeBytes = headerSizeBytes + payloadSizeBytes;
 
@@ -31,6 +32,7 @@ void MasterSubJob::SendInput(int workerId) {
 }
 
 void MasterSubJob::RecvOutput(int workerId) {
+    UNUSED(workerId);
     printf("RecvOutput not implemented\n");
 }
 
@@ -49,7 +51,7 @@ void SlaveSubJob::RecvInput(int masterId) {
 
     MPI_Recv(buf.get(), msgSizeBytes, BYTE_MPI_DATA_TYPE, masterId, 0 /*tag*/, MPI_COMM_WORLD, &status);
 
-    constexpr int headerSizeBytes = sizeof(Hdr);
+    const int headerSizeBytes = sizeof(Hdr);
     const int payloadSizeBytes = msgSizeBytes - headerSizeBytes;
     const unsigned char* headerPtr = buf.get();
     const unsigned char* payloadPtr = buf.get() + headerSizeBytes;
@@ -71,6 +73,7 @@ void SlaveSubJob::RecvInput(int masterId) {
 }
 
 void SlaveSubJob::SendOutput(int masterId) {
+    UNUSED(masterId);
     printf("SendOutput not implemented\n");
 }
 

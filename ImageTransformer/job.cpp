@@ -42,6 +42,8 @@ std::vector<MasterSubJob> Job::ComputeJobSplits(int workersCount) {
     const int lastRow = rows - 1;
     const int lastCol = cols - 1;
 
+    cout << "[Job::ComputeJobSplits]: rows = " << rows << ", cols = " << cols << '\n';
+
     assert(rows > workersCount);
     int rowsPerWorker = CeilDiv(rows, workersCount);
 

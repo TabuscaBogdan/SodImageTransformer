@@ -26,8 +26,8 @@ struct SubImageDim {
     inline void Expand(int delta, int lastRow, int lastCol) {
         Min.first  = std::max(Min.first  - delta, 0);
         Min.second = std::max(Min.second - delta, 0);
-        Max.first  = std::min(Min.first  + delta, lastRow);
-        Max.second = std::min(Min.second + delta, lastCol);
+        Max.first  = std::min(Max.first  + delta, lastRow);
+        Max.second = std::min(Max.second + delta, lastCol);
     }
 
     inline int ElementsCount() const {

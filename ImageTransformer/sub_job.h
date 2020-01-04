@@ -30,6 +30,16 @@ struct JobDims {
             : Input(in), ToProcess(toProcess), Output(out) {}
     JobDims(const JobDims&) = default;
     JobDims& operator = (const JobDims&) = default;
+
+    inline std::string ToString() const {
+        std::ostringstream ss;
+        ss << "["
+           << "Input=" << Input.ToString()
+           << ", ToProcess=" << ToProcess.ToString()
+           << ", Output=" << Output.ToString()
+           << "]";
+        return ss.str();
+    }
 };
 
 struct BlurParams {
@@ -39,20 +49,49 @@ struct BlurParams {
     explicit BlurParams(int r) : R(r) {}
     BlurParams(const BlurParams&) = default;
     BlurParams& operator=(const BlurParams&) = default;
+
+    inline std::string ToString() const {
+        return std::string() + "[" + "R=" + std::to_string(R) + "]";
+    }
 };
 
 struct SepiaParams {
-
+    inline std::string ToString() const {
+        return "[]";
+    }
 };
 
 struct Operation {
     enum Type {
         BLUR,
         SEPIA,
+        UNKNOWN,
     };
 
+public:
+    Operation() : OpType(UNKNOWN) {}
+    Operation(const Operation&) = default;
+    Operation& operator = (const Operation&) = default;
+
+public:
     Type OpType;
     std::variant<BlurParams, SepiaParams> OpParams;
+
+public:
+    inline std::string ToString() const {
+        std::ostringstream ss;
+        switch (OpType) {
+            case BLUR:
+                ss << "[Type=BLUR, Params=" << std::get<BlurParams>(OpParams).ToString() << "]";
+                break;
+            case SEPIA:
+                ss << "[Type=SEPIA, Params=" << std::get<SepiaParams>(OpParams).ToString() << "]";
+                break;
+            default:
+                ss << "[Type=UNKNOWN]";
+        }
+        return ss.str();
+    }
 };
 
 class Job;
@@ -78,6 +117,12 @@ struct Header {
     Header(const JobDims& dims, const Operation& op) : Dims(dims), Op(op) {}
     Header(const Header&) = default;
     Header& operator=(const Header&) = default;
+
+    inline std::string ToString() const {
+        std::ostringstream ss;
+        ss << "[" << "Dims=" << Dims.ToString() << ", " << "Op=" << Op.ToString() << "]";
+        return ss.str();
+    }
 };
 
 struct SlaveSubJob {
