@@ -14,4 +14,6 @@ inline int CeilDiv(int numerator, int denominator) {
     return (numerator + (denominator - 1)) / denominator;
 }
 
+#define UNUSED(v) (void)(v);
+
 #endif //SODIMAGETRANSFORMER_UTILS_H

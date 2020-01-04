@@ -14,6 +14,7 @@
 #include "stb_image_write.h"
 
 #include "bitmap.h"
+#include "sub_image_dim.h"
 
 const int NUM_CHANNELS = 3;
 
@@ -80,8 +81,8 @@ public:
     }
 
     void ToBitmap(bitmap* bm) const {
-        assert(bm->getWidth() == _rows);
-        assert(bm->getHeight() == _cols);
+        assert((int)bm->getWidth() == _rows);
+        assert((int)bm->getHeight() == _cols);
 
         for (int row = 0; row < _rows; ++row) {
             for (int col = 0; col < _cols; ++col) {
@@ -90,6 +91,9 @@ public:
             }
         }
     }
+
+    void SubImageToBuffer(unsigned char* buf, const SubImageDim& dim) const ;
+    void FromBuffer(const unsigned char* buf);
 
     int Rows() const {
         return _rows;
@@ -110,13 +114,17 @@ public:
         std::fill(_data.begin(), _data.end(), zeroValue);
     }
 
+    static int BytesPerElem() {
+        return sizeof(rgb32);
+    }
+
 public:
     const rgb32& operator()(int i, int j) const {
         assert(0 <= i && i < _rows);
         assert(0 <= j && j < _cols);
 
         auto index = i * _cols + j;
-        assert(0 <= index && index < _data.size());
+        assert(0 <= index && index < (int)_data.size());
 
         return _data[index];
 }
@@ -126,15 +134,49 @@ public:
         assert(0 <= j && j < _cols);
 
         auto index = i * _cols + j;
-        assert(0 <= index && index < _data.size());
+        assert(0 <= index && index < (int)_data.size());
 
         return _data[index];
     }
+
 
 private:
     std::vector<rgb32> _data;
     int _rows;
     int _cols;
+};
+
+class RgbSubMatrix {
+
+public:
+    RgbSubMatrix(): RgbSubMatrix(SubImageDim(0, 0, -1, -1)) {}
+    explicit RgbSubMatrix(const SubImageDim& dim) { Resize(dim); }
+    RgbSubMatrix(const RgbSubMatrix&) = delete;
+    RgbSubMatrix& operator = (const RgbSubMatrix&) = delete;
+
+public:
+
+    void Resize(const SubImageDim& dim) {
+        _dim = dim;
+        _data.Resize(dim.NumRows(), dim.NumCols());
+    }
+
+    const rgb32& operator()(int i, int j) const {
+        return _data(i - _dim.MinRow(), j - _dim.MinCol());
+    }
+    rgb32& operator()(int i, int j) {
+        return _data(i - _dim.MinRow(), j - _dim.MinCol());
+    }
+    const SubImageDim& Dim() const { return _dim; }
+
+    void FromBuffer(const unsigned char* buf, const SubImageDim& dim) {
+        Resize(dim);
+        _data.FromBuffer(buf);
+    }
+
+private:
+    SubImageDim _dim;
+    RgbMatrix   _data;
 };
 
 

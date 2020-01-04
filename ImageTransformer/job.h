@@ -16,7 +16,7 @@ struct Job {
 
     std::vector<MasterSubJob> ComputeJobSplits(int workersCount);
     void JoinResults(const std::vector<MasterSubJob>& jobs);
-    JobDims ComputeJobDims(const SubImageDim& toProcess, int lastRow, int lastCol) const;
+    MasterSubJob ComputeJobDims(const SubImageDim& toProcess, int lastRow, int lastCol) const;
 
 };
 

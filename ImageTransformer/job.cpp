@@ -4,10 +4,11 @@
 
 #include "job.h"
 #include "utils.h"
+#include "sub_image_dim.h"
 
 using namespace std;
 
-JobDims Job::ComputeJobDims(const SubImageDim& toProcess, int lastRow, int lastCol) const {
+MasterSubJob Job::ComputeJobDims(const SubImageDim& toProcess, int lastRow, int lastCol) const {
     SubImageDim input;
     SubImageDim output;
 
@@ -31,7 +32,7 @@ JobDims Job::ComputeJobDims(const SubImageDim& toProcess, int lastRow, int lastC
         default:
             assert(false);
     }
-    return JobDims(input, toProcess, output);
+    return MasterSubJob(JobDims(input, toProcess, output), *this);
 }
 
 std::vector<MasterSubJob> Job::ComputeJobSplits(int workersCount) {
@@ -52,10 +53,18 @@ std::vector<MasterSubJob> Job::ComputeJobSplits(int workersCount) {
         int jobLastRow  = rowsPerWorker * (worker + 1) - 1;
 
         jobFirstRow = min(jobFirstRow, lastRow);
-        jobLastRow  = min(jobLastRow, lastCol);
+        jobLastRow  = min(jobLastRow, lastRow);
 
-        SubImageDim toProcess(jobFirstRow, 0, jobLastRow, 0);
-        jobs.emplace_back(ComputeJobDims(toProcess, lastRow, lastCol));
+        SubImageDim toProcess(jobFirstRow, 0, jobLastRow, lastCol);
+        MasterSubJob job = ComputeJobDims(toProcess, lastRow, lastCol);
+        jobs.emplace_back(job);
+
+        cout << "job: " << toProcess.ToString() << '\n';
     }
     return jobs;
+}
+
+void Job::JoinResults(const std::vector<MasterSubJob>& jobs) {
+    UNUSED(jobs);
+    printf("Job::JoinResults not implemented\n");
 }

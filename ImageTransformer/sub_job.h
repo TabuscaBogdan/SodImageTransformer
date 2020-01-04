@@ -11,23 +11,6 @@
 #include <variant>
 #include "RgbMatrix.h"
 
-struct SubImageDim {
-    std::pair<int, int> Min;
-    std::pair<int, int> Max;
-
-    SubImageDim() = default;
-    SubImageDim(int minRow, int minCol, int maxRow, int maxCol) : Min(minRow, minCol), Max(maxRow, maxCol) {}
-    SubImageDim(const SubImageDim&) = default;
-    SubImageDim& operator = (const SubImageDim&) = default;
-
-    void Expand(int delta, int lastRow, int lastCol) {
-        Min.first  = std::max(Min.first  - delta, 0);
-        Min.second = std::max(Min.second - delta, 0);
-        Max.first  = std::min(Min.first  + delta, lastRow);
-        Max.second = std::min(Min.second + delta, lastCol);
-    }
-};
-
 /**
  * Example: for a blur operation of ray 2, a possible job dims:
  *   Input:     (2, 2), (8, 9)
@@ -68,7 +51,7 @@ struct Operation {
         SEPIA,
     };
 
-    Type                                  OpType;
+    Type OpType;
     std::variant<BlurParams, SepiaParams> OpParams;
 };
 
@@ -79,17 +62,28 @@ struct MasterSubJob {
     const Job& ImgJob;
 
     MasterSubJob(const JobDims& dims, const Job& job) : Dims(dims), ImgJob(job) {}
+    MasterSubJob(const MasterSubJob&) = default;
+    MasterSubJob& operator = (const MasterSubJob&) = delete;
 
     void SendInput(int workerId);
     void RecvOutput(int workerId);
     void ExecuteLocal();
 };
 
-struct SlaveSubJob {
+struct Header {
     JobDims   Dims;
     Operation Op;
-    RgbMatrix Input;
-    RgbMatrix Output;
+
+    Header() = default;
+    Header(const JobDims& dims, const Operation& op) : Dims(dims), Op(op) {}
+    Header(const Header&) = default;
+    Header& operator=(const Header&) = default;
+};
+
+struct SlaveSubJob {
+    Header       Hdr;
+    RgbSubMatrix Input;
+    RgbSubMatrix Output;
 
     void RecvInput(int masterId);
     void SendOutput(int masterId);

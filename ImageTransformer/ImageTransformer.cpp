@@ -9,6 +9,7 @@
 #include "RgbMatrix.h"
 #include "operations.h"
 #include "job.h"
+#include "utils.h"
 #include "sub_job.h"
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
@@ -39,6 +40,9 @@ void log(const string& func, const string& img, int nt, double time) {
 }
 
 int main_single_machine(int argc, char* argv[]) {
+    UNUSED(argc);
+    UNUSED(argv);
+
     const string DATA_DIR      = "../data/";
     const string FUNCS[]       = {"sepia", "blur", "swirl"};
     const string IMAGE         = "600x600";
@@ -109,6 +113,8 @@ int main_multi_machine(int argc, char* argv[]) {
     MPI_Comm_rank(MPI_COMM_WORLD, &id);
     MPI_Comm_size(MPI_COMM_WORLD, &procCount);
 
+    printf("id = %d, count = %d\n", id, procCount);
+
     if (id == 0) {
         Operation op;
         op.OpType  = Operation::BLUR;
@@ -122,15 +128,15 @@ int main_multi_machine(int argc, char* argv[]) {
         for (int workerId = 1; workerId < procCount; ++workerId) {
             jobs[workerId].SendInput(workerId);
         }
+        printf("Master sent job inputs to all slaves\n");
 
         jobs[0].ExecuteLocal();
         for (int workerId = 1; workerId < procCount; ++workerId) {
             jobs[workerId].RecvOutput(workerId);
         }
+        printf("Master recv'd all outputs from all slaves\n");
 
         job.JoinResults(jobs);
-        // TODO: output results
-
     } else {
         SlaveSubJob job;
 
@@ -140,8 +146,9 @@ int main_multi_machine(int argc, char* argv[]) {
     }
 
     MPI_Finalize();
+    return 0;
 }
 
 int main(int argc, char* argv[]) {
-    return main_single_machine(argc, argv);
+    return main_multi_machine(argc, argv);
 }
