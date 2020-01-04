@@ -25,6 +25,9 @@ struct JobDims {
     SubImageDim ToProcess;
     SubImageDim Output;
 
+    // TODO: Why do we need ToProcess field? It's the same as Output currently, it would only be relevant
+    //       if we needed custom shapes to process, in which case we actually need this for both input and output.
+
     JobDims() = default;
     JobDims(const SubImageDim& in, const SubImageDim& toProcess, const SubImageDim& out)
             : Input(in), ToProcess(toProcess), Output(out) {}
@@ -45,10 +48,14 @@ struct JobDims {
 struct BlurParams {
     int R;
 
+public:
+
     BlurParams() : BlurParams(0) {}
     explicit BlurParams(int r) : R(r) {}
     BlurParams(const BlurParams&) = default;
     BlurParams& operator=(const BlurParams&) = default;
+
+public:
 
     inline std::string ToString() const {
         return std::string() + "[" + "R=" + std::to_string(R) + "]";
@@ -97,10 +104,11 @@ public:
 class Job;
 
 struct MasterSubJob {
-    JobDims    Dims;
-    const Job& ImgJob;
+    JobDims      Dims;
+    const Job&   ImgJob;
+    RgbSubMatrix Output;
 
-    MasterSubJob(const JobDims& dims, const Job& job) : Dims(dims), ImgJob(job) {}
+    MasterSubJob(const JobDims& dims, const Job& job) : Dims(dims), ImgJob(job), Output() {}
     MasterSubJob(const MasterSubJob&) = default;
     MasterSubJob& operator = (const MasterSubJob&) = delete;
 

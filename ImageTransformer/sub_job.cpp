@@ -4,9 +4,11 @@
 
 #include <memory>
 
+#include "mpi.h"
+
+#include "operations.h"
 #include "sub_job.h"
 #include "job.h"
-#include "mpi.h"
 #include "utils.h"
 
 using namespace std;
@@ -32,8 +34,12 @@ void MasterSubJob::SendInput(int workerId) {
 }
 
 void MasterSubJob::RecvOutput(int workerId) {
-    UNUSED(workerId);
-    printf("RecvOutput not implemented\n");
+    const int outputSizeBytes = Dims.Output.ElementsCount() * sizeof(Output(0, 0));
+
+    Output.Resize(Dims.Output);
+    MPI_Recv(Output.DataPtr(), outputSizeBytes, BYTE_MPI_DATA_TYPE, workerId, 0 /*tag*/, MPI_COMM_WORLD, nullptr /*status*/);
+
+    printf("Master received output of size %d bytes from worker %d.\n", outputSizeBytes, workerId);
 }
 
 void MasterSubJob::ExecuteLocal() {
@@ -62,21 +68,54 @@ void SlaveSubJob::RecvInput(int masterId) {
 
     Input.FromBuffer(payloadPtr, Hdr.Dims.Input);
 
-    // Debug
+#ifndef NDEBUG
     int id;
     MPI_Comm_rank(MPI_COMM_WORLD, &id);
     printf("Slave %d received input [(%d, %d), (%d, %d)]\n", id,
-            Input.Dim().MinRow(),
-            Input.Dim().MinCol(),
-            Input.Dim().MaxRow(),
-            Input.Dim().MaxCol());
+            Input.MinRow(),
+            Input.MinCol(),
+            Input.MaxRow(),
+            Input.MaxCol());
+#endif
 }
 
 void SlaveSubJob::SendOutput(int masterId) {
-    UNUSED(masterId);
-    printf("SendOutput not implemented\n");
+    const int outputSizeBytes = Output.Dim().ElementsCount() * sizeof(Output(0, 0));
+
+    MPI_Send(
+            Output.DataPtr(),
+            outputSizeBytes,
+            MPI_BYTE, masterId,
+            0 /*tag*/,
+            MPI_COMM_WORLD);
+
+#ifndef NDEBUG
+    int id;
+    MPI_Comm_rank(MPI_COMM_WORLD, &id);
+    printf("Slave %d sent output of size %d bytes.\n", id, outputSizeBytes);
+#endif
 }
 
 void SlaveSubJob::ExecuteLocal() {
-    printf("SlaveSubJob::ExecuteLocal not implemented\n");
+    Output.Resize(Hdr.Dims.Output);
+
+    switch (Hdr.Op.OpType) {
+        case Operation::BLUR: {
+            const BlurParams& p = std::get<BlurParams>(Hdr.Op.OpParams);
+            MakeBlur(Output, Input, p.R);
+            break;
+        }
+        case Operation::SEPIA: {
+            const SepiaParams& p = std::get<SepiaParams>(Hdr.Op.OpParams);
+            printf("TODO SEPIA\n");
+            UNUSED(p);
+//            Output = Input;
+//            MakeSepia(Output);
+            break;
+        }
+        default: {
+            printf("Unknown operation type\n");
+            break;
+        }
+    }
 }

@@ -84,7 +84,8 @@ int main_single_machine(int argc, char* argv[]) {
 
             // Blur
             start = omp_get_wtime();
-            MakeBlur(mDst, m, 5);
+//            MakeBlur(mDst, m, 5);
+//             TODO
             stop = omp_get_wtime();
             if (SAVE) {
                 mDst.SaveAsPng(dstImgs[1].c_str());

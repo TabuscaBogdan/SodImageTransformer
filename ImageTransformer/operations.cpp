@@ -42,9 +42,7 @@ void MakeSepia(RgbMatrix& m) {
     }
 }
 
-void MakeBlur(RgbMatrix& dst, const RgbMatrix& src, int radius) {
-    assert (dst.Rows() == src.Rows() && dst.Cols() == src.Cols());
-
+void MakeBlur(RgbSubMatrix& dst, const RgbSubMatrix& src, int radius) {
     if (radius < 2) {
         cout << "Radius is too small";
         return;
@@ -64,15 +62,15 @@ void MakeBlur(RgbMatrix& dst, const RgbMatrix& src, int radius) {
     int i, j;
 
     #pragma omp parallel for collapse(2) private(i, j)
-    for (i = 0; i < src.Rows(); ++i) {
-        for (j = 0; j < src.Cols(); ++j) {
+    for (i = dst.MinRow(); i <= dst.MaxRow(); ++i) {
+        for (j = dst.MinCol(); j <= dst.MaxCol(); ++j) {
             double val_red = 0, val_blue = 0, val_green = 0, val_alpha = 0;
             double wsum = 0;
 
             for (int di = -radius; di < radius + 1; ++di) {
                 for (int dj = -radius; dj < radius + 1; ++dj) {
-                    int x = Clamp(j + dj, 0, src.Cols() - 1);
-                    int y = Clamp(i + di, 0, src.Rows() - 1);
+                    int x = Clamp(j + dj, src.MinCol(), src.MaxCol());
+                    int y = Clamp(i + di, src.MinRow(), src.MaxRow());
                     double weight = weights[abs(di)][abs(dj)];
 
                     val_red += src(y, x).r * weight;
@@ -153,3 +151,4 @@ void MakeSwirl(RgbMatrix& dst, const RgbMatrix& src, double factor) {
         }
     }
 }
+

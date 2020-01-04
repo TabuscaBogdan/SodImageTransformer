@@ -114,6 +114,9 @@ public:
         std::fill(_data.begin(), _data.end(), zeroValue);
     }
 
+    const rgb32* DataPtr() const { return &_data[0]; }
+    rgb32* DataPtr() { return &_data[0]; }
+
     static int BytesPerElem() {
         return sizeof(rgb32);
     }
@@ -151,7 +154,7 @@ class RgbSubMatrix {
 public:
     RgbSubMatrix(): RgbSubMatrix(SubImageDim(0, 0, -1, -1)) {}
     explicit RgbSubMatrix(const SubImageDim& dim) { Resize(dim); }
-    RgbSubMatrix(const RgbSubMatrix&) = delete;
+    RgbSubMatrix(const RgbSubMatrix&) = default;
     RgbSubMatrix& operator = (const RgbSubMatrix&) = delete;
 
 public:
@@ -162,12 +165,19 @@ public:
     }
 
     const rgb32& operator()(int i, int j) const {
-        return _data(i - _dim.MinRow(), j - _dim.MinCol());
+        return _data(i - MinRow(), j - MinCol());
     }
     rgb32& operator()(int i, int j) {
-        return _data(i - _dim.MinRow(), j - _dim.MinCol());
+        return _data(i - MinRow(), j - MinCol());
     }
+
+    const rgb32* DataPtr() const { return _data.DataPtr(); }
+    rgb32* DataPtr() { return _data.DataPtr(); }
     const SubImageDim& Dim() const { return _dim; }
+    int MinRow() const { return Dim().MinRow(); }
+    int MinCol() const { return Dim().MinCol(); }
+    int MaxRow() const { return Dim().MaxRow(); }
+    int MaxCol() const { return Dim().MaxCol(); }
 
     void FromBuffer(const unsigned char* buf, const SubImageDim& dim) {
         Resize(dim);

@@ -11,7 +11,7 @@
 int Clamp(int val, int min, int max);
 void MakeSepia(RgbMatrix &m);
 
-void MakeBlur(RgbMatrix& dst, const RgbMatrix& src, int radius = 2);
+void MakeBlur(RgbSubMatrix& dst, const RgbSubMatrix& src, int radius = 2);
 
 void MakeSwirl(RgbMatrix& dst, const RgbMatrix& src, double factor);
 
