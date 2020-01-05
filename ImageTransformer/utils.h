@@ -16,4 +16,9 @@ inline int CeilDiv(int numerator, int denominator) {
 
 #define UNUSED(v) (void)(v);
 
+
+// Used for simple formatting of paths.
+static std::ostringstream _ss;
+#define SSTR(x) (_ss.str(""), _ss.clear(), _ss << x, _ss.str())
+
 #endif //SODIMAGETRANSFORMER_UTILS_H

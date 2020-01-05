@@ -106,7 +106,6 @@ int main_single_machine(int argc, char* argv[]) {
     return 0;
 }
 
-
 int main_multi_machine(int argc, char* argv[]) {
     MPI_Init(&argc, &argv);
 
@@ -125,13 +124,8 @@ int main_multi_machine(int argc, char* argv[]) {
         const char* BASE = "600x600";
         const char* EXT  = ".bmp";
 
-        ostringstream ssIn;
-        ssIn << DIR << BASE << EXT;
-        const string inPath = ssIn.str();
-
-        ostringstream ssOut;
-        ssOut << DIR << BASE << op.ToString() << ".png";
-        const string outPath = ssOut.str();
+        const string inPath  = SSTR(DIR << BASE << EXT);
+        const string outPath = SSTR(DIR << BASE << op.ToString() << ".png");
 
         cout << "inPath = " << inPath << '\n';
         cout << "outPath = " << outPath << '\n';

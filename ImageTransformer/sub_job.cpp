@@ -27,6 +27,8 @@ void MasterSubJob::SendInput(int workerId) {
     unsigned char* headerPtr = buf.get();
     unsigned char* payloadPtr = buf.get() + headerSizeBytes;
 
+    // TODO: Sending the memory representation of the std::variant over network is very questionable, even more
+    //       than ignoring the endian-ess of the data involved.
     memcpy(headerPtr, (void*)&header, headerSizeBytes);
     ImgJob.Image.SubImageToBuffer(payloadPtr, Dims.Input);
 
@@ -34,7 +36,7 @@ void MasterSubJob::SendInput(int workerId) {
 }
 
 void MasterSubJob::RecvOutput(int workerId) {
-    const int outputSizeBytes = Dims.Output.ElementsCount() * sizeof(Output(0, 0));
+    const int outputSizeBytes = Dims.Output.ElementsCount() * (int)sizeof(Output(0, 0));
 
     Output.Resize(Dims.Output);
     MPI_Recv(Output.DataPtr(), outputSizeBytes, BYTE_MPI_DATA_TYPE, workerId, 0 /*tag*/, MPI_COMM_WORLD, nullptr /*status*/);
