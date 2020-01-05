@@ -142,6 +142,10 @@ public:
         return _data[index];
     }
 
+    int MinRow() const { return 0; }
+    int MinCol() const { return 0; }
+    int MaxRow() const { return Rows() - 1; }
+    int MaxCol() const { return Cols() - 1; }
 
 private:
     std::vector<rgb32> _data;
@@ -188,6 +192,5 @@ private:
     SubImageDim _dim;
     RgbMatrix   _data;
 };
-
 
 #endif //SODIMAGETRANSFORMER_RGBMATRIX_H

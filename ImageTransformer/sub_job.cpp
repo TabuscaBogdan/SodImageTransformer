@@ -43,7 +43,8 @@ void MasterSubJob::RecvOutput(int workerId) {
 }
 
 void MasterSubJob::ExecuteLocal() {
-    printf("ExecuteLocal not implemented\n");
+    Execute(Output, ImgJob.Image, ImgJob.Op, Dims.Output);
+    cout << "Master executed sub job locally, output size = " << Output.Dim().ToString() << '\n';
 }
 
 void SlaveSubJob::RecvInput(int masterId) {
@@ -97,25 +98,5 @@ void SlaveSubJob::SendOutput(int masterId) {
 }
 
 void SlaveSubJob::ExecuteLocal() {
-    Output.Resize(Hdr.Dims.Output);
-
-    switch (Hdr.Op.OpType) {
-        case Operation::BLUR: {
-            const BlurParams& p = std::get<BlurParams>(Hdr.Op.OpParams);
-            MakeBlur(Output, Input, p.R);
-            break;
-        }
-        case Operation::SEPIA: {
-            const SepiaParams& p = std::get<SepiaParams>(Hdr.Op.OpParams);
-            printf("TODO SEPIA\n");
-            UNUSED(p);
-//            Output = Input;
-//            MakeSepia(Output);
-            break;
-        }
-        default: {
-            printf("Unknown operation type\n");
-            break;
-        }
-    }
+    Execute(Output, Input, Hdr.Op, Hdr.Dims.Output);
 }

@@ -3,12 +3,12 @@
 //
 
 #include "operations.h"
+#include "RgbMatrix.h"
+#include "utils.h"
 
+#include <cmath>
 #include <iostream>
 #include <algorithm>
-#include <cmath>
-
-#include "RgbMatrix.h"
 
 using namespace std;
 
@@ -38,53 +38,6 @@ void MakeSepia(RgbMatrix& m) {
             m(i, j).r = uint8_t(min(r, 255.0f));
             m(i, j).g = uint8_t(min(g, 255.0f));
             m(i, j).b = uint8_t(min(b, 255.0f));
-        }
-    }
-}
-
-void MakeBlur(RgbSubMatrix& dst, const RgbSubMatrix& src, int radius) {
-    if (radius < 2) {
-        cout << "Radius is too small";
-        return;
-    }
-
-    // Precompute the weights matrix.
-    vector<vector<double>> weights(radius + 1, vector<double>(radius + 1));
-    for (int i = 0; i <= radius; ++i) {
-        for (int j = 0; j <= radius; ++j) {
-            int dsq = i*i + j*j;
-            double weight = exp(-dsq / (2 * radius * radius)) / (PI * 2 * radius * radius);
-
-            weights[i][j] = weight;
-        }
-    }
-
-    int i, j;
-
-    #pragma omp parallel for collapse(2) private(i, j)
-    for (i = dst.MinRow(); i <= dst.MaxRow(); ++i) {
-        for (j = dst.MinCol(); j <= dst.MaxCol(); ++j) {
-            double val_red = 0, val_blue = 0, val_green = 0, val_alpha = 0;
-            double wsum = 0;
-
-            for (int di = -radius; di < radius + 1; ++di) {
-                for (int dj = -radius; dj < radius + 1; ++dj) {
-                    int x = Clamp(j + dj, src.MinCol(), src.MaxCol());
-                    int y = Clamp(i + di, src.MinRow(), src.MaxRow());
-                    double weight = weights[abs(di)][abs(dj)];
-
-                    val_red += src(y, x).r * weight;
-                    val_green += src(y, x).g * weight;
-                    val_blue += src(y, x).b * weight;
-                    val_alpha += src(y, x).a * weight;
-                    wsum += weight;
-                }
-            }
-
-            dst(i, j).r = val_red / wsum;
-            dst(i, j).g = val_green / wsum;
-            dst(i, j).b = val_blue / wsum;
-            dst(i, j).a = val_alpha / wsum;
         }
     }
 }
