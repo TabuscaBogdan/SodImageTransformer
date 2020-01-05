@@ -17,3 +17,11 @@ void RgbMatrix::SubImageToBuffer(unsigned char* buf, const SubImageDim& dim) con
 void RgbMatrix::FromBuffer(const unsigned char* buf) {
     memcpy(&_data[0], buf, sizeof(_data[0]) * Rows() * Cols());
 }
+
+void RgbMatrix::CopyFrom(const RgbSubMatrix& sub) {
+    for (int row = sub.MinRow(); row <= sub.MaxRow(); ++row) {
+        for (int col = sub.MinCol(); col <= sub.MaxCol(); ++col) {
+            (*this)(row, col) = sub(row, col);
+        }
+    }
+}

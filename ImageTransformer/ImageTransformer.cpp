@@ -22,8 +22,8 @@
 
 using namespace std;
 
-ofstream fout("../output_data/bogdan/out_600x600.csv");
-#define cout fout
+//ofstream fout("../output_data/bogdan/out_600x600.csv");
+//#define cout fout
 
 void SetNumberOfThreads(int numThreads) {
     omp_set_num_threads(numThreads);
@@ -120,7 +120,23 @@ int main_multi_machine(int argc, char* argv[]) {
         Operation op;
         op.OpType  = Operation::BLUR;
         op.OpParams = BlurParams(5);
-        RgbMatrix m("../data/600x600.bmp");
+
+        const char* DIR  = "../data/";
+        const char* BASE = "600x600";
+        const char* EXT  = ".bmp";
+
+        ostringstream ssIn;
+        ssIn << DIR << BASE << EXT;
+        const string inPath = ssIn.str();
+
+        ostringstream ssOut;
+        ssOut << DIR << BASE << op.ToString() << ".png";
+        const string outPath = ssOut.str();
+
+        cout << "inPath = " << inPath << '\n';
+        cout << "outPath = " << outPath << '\n';
+
+        RgbMatrix m(inPath);
 
         Job job(m, op);
 
@@ -137,7 +153,9 @@ int main_multi_machine(int argc, char* argv[]) {
         }
         printf("Master recv'd all outputs from all slaves\n");
 
-        job.JoinResults(jobs);
+        job.JoinSubJobOutputs(jobs);
+
+        job.Output.SaveAsPng(outPath.c_str());
     } else {
         SlaveSubJob job;
 

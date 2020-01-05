@@ -66,7 +66,11 @@ std::vector<MasterSubJob> Job::ComputeJobSplits(int workersCount) {
     return jobs;
 }
 
-void Job::JoinResults(const std::vector<MasterSubJob>& jobs) {
-    UNUSED(jobs);
-    printf("Job::JoinResults not implemented\n");
+void Job::JoinSubJobOutputs(const std::vector<MasterSubJob>& jobs) {
+    // TODO: Some operations might produce an output of a different shape than the input.
+    Output.Resize(Image.Rows(), Image.Cols());
+
+    for (const MasterSubJob& job : jobs) {
+        Output.CopyFrom(job.Output);
+    }
 }

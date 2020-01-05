@@ -18,6 +18,8 @@
 
 const int NUM_CHANNELS = 3;
 
+class RgbSubMatrix;
+
 class RgbMatrix {
 public:
     RgbMatrix() : RgbMatrix(0, 0) {}
@@ -34,6 +36,7 @@ public:
             }
         }
     }
+    explicit RgbMatrix(const std::string& path) : RgbMatrix(path.c_str()) {}
     explicit RgbMatrix(const char* path) {
         ReadFromFile(path);
     }
@@ -94,6 +97,7 @@ public:
 
     void SubImageToBuffer(unsigned char* buf, const SubImageDim& dim) const ;
     void FromBuffer(const unsigned char* buf);
+    void CopyFrom(const RgbSubMatrix& sub);
 
     int Rows() const {
         return _rows;

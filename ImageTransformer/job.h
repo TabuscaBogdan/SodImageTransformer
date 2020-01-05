@@ -11,11 +11,12 @@
 struct Job {
     const RgbMatrix& Image;
     const Operation& Op;
+    RgbMatrix        Output;
 
     Job(const RgbMatrix& img, const Operation& op) : Image(img), Op(op) {}
 
     std::vector<MasterSubJob> ComputeJobSplits(int workersCount);
-    void JoinResults(const std::vector<MasterSubJob>& jobs);
+    void JoinSubJobOutputs(const std::vector<MasterSubJob>& jobs);
     MasterSubJob ComputeJobDims(const SubImageDim& toProcess, int lastRow, int lastCol) const;
 
 };
