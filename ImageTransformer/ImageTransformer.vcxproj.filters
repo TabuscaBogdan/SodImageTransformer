@@ -13,6 +13,7 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    
     <Filter Include="data">
       <UniqueIdentifier>{e66cd5eb-61d9-4d1b-a8a4-709ca15c9ab8}</UniqueIdentifier>
     </Filter>
@@ -27,9 +28,30 @@
     <ClCompile Include="operations.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="job.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RgbMatrix.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="sub_job.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="bitmap.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="job.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="sub_job.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RgbMatrix.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="utils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="operations.h">

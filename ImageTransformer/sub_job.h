@@ -76,9 +76,26 @@ struct Operation {
     };
 
 public:
-    Operation() : OpType(UNKNOWN) {}
+    Operation() : OpType(UNKNOWN), OpParams() {};
     Operation(const Operation&) = default;
     Operation& operator = (const Operation&) = default;
+
+    template <typename PARAMS>
+    explicit Operation(const PARAMS& params) {
+        Type type = UNKNOWN;
+
+        if (std::is_same_v<PARAMS, BlurParams>) {
+            type = BLUR;
+        } else if (std::is_same_v<PARAMS, SepiaParams>) {
+            type = SEPIA;
+        } else {
+            assert(false);
+            type = UNKNOWN;
+        }
+
+        OpType = type;
+        OpParams = params;
+    }
 
 public:
     Type OpType;

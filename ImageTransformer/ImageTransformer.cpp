@@ -116,9 +116,7 @@ int main_multi_machine(int argc, char* argv[]) {
     printf("id = %d, count = %d\n", id, procCount);
 
     if (id == 0) {
-        Operation op;
-        op.OpType  = Operation::BLUR;
-        op.OpParams = BlurParams(5);
+        Operation op(BlurParams(5));
 
         const char* DIR  = "../data/";
         const char* BASE = "600x600";
