@@ -36,7 +36,7 @@ struct SubImageDim {
 
     inline std::string ToString() const {
         std::ostringstream ss;
-        ss << "[(" << Min.first << "," << Min.second << "), (" << Max.first << "," << Max.second << ")]";
+        ss << "[(" << Min.first << ";" << Min.second << "); (" << Max.first << ";" << Max.second << ")]";
         return ss.str();
     }
 };

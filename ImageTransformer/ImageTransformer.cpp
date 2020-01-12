@@ -22,18 +22,26 @@
 
 using namespace std;
 
-//ofstream fout("../output_data/bogdan/out_600x600.csv");
-//#define cout fout
-
 void SetNumberOfThreads(int numThreads) {
     omp_set_num_threads(numThreads);
 }
 
 void log(const string& func, const string& img, int nt, double time) {
-    cout << fixed << setprecision(5);
 //    cout << "Time taken for " << nt << " threads"  << " on '" << func << "' on '" << img << "':" << time << '\n';
+    ofstream fout("../output_data/log.csv", ios::app);
+    assert(fout);
+
     const char* SEP = ",";
-    cout << nt << SEP <<
+
+    fout << fixed << setprecision(5);
+
+#ifndef NDEBUG
+    fout << "Debug" << SEP;
+#else
+    fout << "Release" << SEP;
+#endif
+
+    fout << nt << SEP <<
          func << SEP <<
          img << SEP <<
          time << '\n';
@@ -67,7 +75,7 @@ int main_single_machine(int argc, char* argv[]) {
         double stop  = -1;
 
         vector<string> dstImgs;
-        for (auto      func : FUNCS) {
+        for (auto func : FUNCS) {
             dstImgs.push_back(DATA_DIR + IMAGE + "_" + func + DST_EXT);
         }
 
@@ -116,10 +124,11 @@ int main_multi_machine(int argc, char* argv[]) {
     printf("id = %d, count = %d\n", id, procCount);
 
     if (id == 0) {
-        Operation op(BlurParams(5));
+//        Operation op((SepiaParams()));
+        Operation op(BlurParams(5, 50));
 
         const char* DIR  = "../data/";
-        const char* BASE = "600x600";
+        const char* BASE = "1920x1080";
         const char* EXT  = ".bmp";
 
         const string inPath  = SSTR(DIR << BASE << EXT);
@@ -131,6 +140,8 @@ int main_multi_machine(int argc, char* argv[]) {
         RgbMatrix m(inPath);
 
         Job job(m, op);
+
+        double startTime = MPI_Wtime();
 
         std::vector<MasterSubJob> jobs = job.ComputeJobSplits(procCount);
 
@@ -147,13 +158,26 @@ int main_multi_machine(int argc, char* argv[]) {
 
         job.JoinSubJobOutputs(jobs);
 
+        double endTime = MPI_Wtime();
+
+        log(op.ToString(), BASE, procCount, endTime - startTime);
+
         job.Output.SaveAsPng(outPath.c_str());
     } else {
         SlaveSubJob job;
 
+        double startTime = MPI_Wtime();
         job.RecvInput(0);
+        double afterRecvTime = MPI_Wtime();
         job.ExecuteLocal();
+        double afterExecTime = MPI_Wtime();
         job.SendOutput(0);
+        double doneTime = MPI_Wtime();
+
+        cout << "Recv (wrong): " << afterRecvTime -  startTime << " sec" << '\n';
+        cout << "Exec: " << afterExecTime - afterRecvTime << " sec" << '\n';
+        cout << "Send (wrong): " <<  doneTime - afterExecTime << " sec" << '\n';
+        cout << "Total: " << doneTime - startTime << " sec" << '\n';
     }
 
     MPI_Finalize();

@@ -12,9 +12,24 @@
 #include <cmath>
 
 int Clamp(int val, int min, int max);
-void MakeSepia(RgbMatrix &m);
 void MakeSwirl(RgbMatrix& dst, const RgbMatrix& src, double factor);
 
+template <typename SRC_DST_MATRIX>
+void MakeSepia(SRC_DST_MATRIX& m) {
+    int i, j;
+    #pragma omp parallel for private(i,j)
+    for (i = m.MinRow(); i < m.MaxRow(); ++i) {
+        for (j = m.MinCol(); j < m.MaxCol(); ++j) {
+            float r = (m(i, j).r * 0.393f) + (m(i, j).g * 0.769f) + (m(i, j).b * 0.189f);
+            float g = (m(i, j).r * 0.349f) + (m(i, j).g * 0.686f) + (m(i, j).b * 0.168f);
+            float b = (m(i, j).r * 0.272f) + (m(i, j).g * 0.534f) + (m(i, j).b * 0.131f);
+
+            m(i, j).r = uint8_t(std::min(r, 255.0f));
+            m(i, j).g = uint8_t(std::min(g, 255.0f));
+            m(i, j).b = uint8_t(std::min(b, 255.0f));
+        }
+    }
+}
 template <typename SRC_MATRIX>
 void MakeBlur(RgbSubMatrix& dst, const SRC_MATRIX& src, int radius) {
     constexpr double PI = 3.14159265358979323846;
@@ -72,16 +87,17 @@ void Execute(RgbSubMatrix& dst, const SRC_MATRIX& src, const Operation& op, cons
 
     switch (op.OpType) {
         case Operation::BLUR: {
-            const BlurParams& p = std::get<BlurParams>(op.OpParams);
-            MakeBlur(dst, src, p.R);
+            const auto& p = std::get<BlurParams>(op.OpParams);
+            for (int i = 0; i < p.Iters; ++i) {
+                MakeBlur(dst, src, p.R);
+            }
             break;
         }
         case Operation::SEPIA: {
-            const SepiaParams& p = std::get<SepiaParams>(op.OpParams);
-            printf("TODO SEPIA\n");
-            UNUSED(p);
-//            Output = Input;
-//            MakeSepia(Output);
+//            const SepiaParams& p = std::get<SepiaParams>(op.OpParams);
+//            UNUSED(p);
+            dst.CopyFrom(src);
+            MakeSepia(dst);
             break;
         }
         default: {

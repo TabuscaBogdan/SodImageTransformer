@@ -88,7 +88,8 @@ void SlaveSubJob::SendOutput(int masterId) {
     MPI_Send(
             Output.DataPtr(),
             outputSizeBytes,
-            MPI_BYTE, masterId,
+            MPI_BYTE,
+            masterId,
             0 /*tag*/,
             MPI_COMM_WORLD);
 

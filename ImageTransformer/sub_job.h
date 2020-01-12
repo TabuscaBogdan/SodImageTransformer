@@ -47,18 +47,19 @@ struct JobDims {
 
 struct BlurParams {
     int R;
+    int Iters;
 
 public:
 
-    BlurParams() : BlurParams(0) {}
-    explicit BlurParams(int r) : R(r) {}
+    BlurParams() : BlurParams(0, 1) {}
+    explicit BlurParams(int r, int iters) : R(r), Iters(iters) {}
     BlurParams(const BlurParams&) = default;
     BlurParams& operator=(const BlurParams&) = default;
 
 public:
 
     inline std::string ToString() const {
-        return std::string() + "[" + "R=" + std::to_string(R) + "]";
+        return std::string() + "[" + "R=" + std::to_string(R) + ";" + "Iters=" + std::to_string(Iters) + "]";
     }
 };
 
@@ -106,10 +107,10 @@ public:
         std::ostringstream ss;
         switch (OpType) {
             case BLUR:
-                ss << "[Type=BLUR, Params=" << std::get<BlurParams>(OpParams).ToString() << "]";
+                ss << "[Type=BLUR; Params=" << std::get<BlurParams>(OpParams).ToString() << "]";
                 break;
             case SEPIA:
-                ss << "[Type=SEPIA, Params=" << std::get<SepiaParams>(OpParams).ToString() << "]";
+                ss << "[Type=SEPIA; Params=" << std::get<SepiaParams>(OpParams).ToString() << "]";
                 break;
             default:
                 ss << "[Type=UNKNOWN]";
@@ -145,7 +146,7 @@ struct Header {
 
     inline std::string ToString() const {
         std::ostringstream ss;
-        ss << "[" << "Dims=" << Dims.ToString() << ", " << "Op=" << Op.ToString() << "]";
+        ss << "[" << "Dims=" << Dims.ToString() << "; " << "Op=" << Op.ToString() << "]";
         return ss.str();
     }
 };

@@ -51,6 +51,8 @@ public:
             std::cout << "File has num_channels=" << bpp << ", using num_channels=" << NUM_CHANNELS << '\n';
         }
 
+        assert(height != 0);
+        assert(width != 0);
         Resize(height, width);
         for (int i = 0; i < height; ++i) {
             for (int j = 0; j < width; ++j) {
@@ -166,6 +168,15 @@ public:
     RgbSubMatrix& operator = (const RgbSubMatrix&) = delete;
 
 public:
+
+    template <typename SRC_MATRIX>
+    void CopyFrom(const SRC_MATRIX& m) {
+        for (int row = MinRow(); row <= MaxRow(); ++row) {
+            for (int col = MinCol(); col <= MaxCol(); ++col) {
+                (*this)(row, col) = m(row, col);
+            }
+        }
+    }
 
     void Resize(const SubImageDim& dim) {
         _dim = dim;
