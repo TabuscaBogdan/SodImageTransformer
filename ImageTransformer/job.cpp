@@ -76,7 +76,6 @@ void Job::Execute(int procCount) {
     for (int workerId = 1; workerId < procCount; ++workerId) {
         MPI_Request reqUnused = MPI_REQUEST_NULL;
         jobs[workerId].SendInput(workerId, Async, &reqUnused); // we only care about the return requests
-//        MPI_Request_free(&reqUnused);
     }
     printf("Master sent job inputs to all slaves\n");
 
@@ -98,9 +97,7 @@ void Job::Execute(int procCount) {
 
         for (int doneCount = 0; doneCount < slavesCount; ++doneCount) {
             MPI_Waitany(reqs.size(), &reqs[0], &doneIndex, &doneStatus);
-            // TODO
             Output.CopyFrom(jobs[doneIndex].Output);
-//            MPI_Request_free(&reqs[doneIndex]);
         }
     } else {
         // all jobs are done at this time if we run sync
