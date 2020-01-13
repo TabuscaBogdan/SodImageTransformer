@@ -2,6 +2,7 @@
 // Created by Cosmin on 15/12/2019.
 //
 
+#include <mpi.h>
 #include "job.h"
 #include "utils.h"
 #include "sub_image_dim.h"
@@ -59,18 +60,52 @@ std::vector<MasterSubJob> Job::ComputeJobSplits(int workersCount) {
 
         SubImageDim toProcess(jobFirstRow, 0, jobLastRow, lastCol);
         MasterSubJob job = ComputeJobDims(toProcess, lastRow, lastCol);
-        jobs.emplace_back(job);
+        jobs.emplace_back(std::move(job));
 
         cout << "job: " << toProcess.ToString() << '\n';
     }
     return jobs;
 }
 
-void Job::JoinSubJobOutputs(const std::vector<MasterSubJob>& jobs) {
-    // TODO: Some operations might produce an output of a different shape than the input.
-    Output.Resize(Image.Rows(), Image.Cols());
+void Job::Execute(int procCount) {
+    vector<MasterSubJob> jobs = ComputeJobSplits(procCount);
 
-    for (const MasterSubJob& job : jobs) {
-        Output.CopyFrom(job.Output);
+    // reqs[0] is unused
+    vector<MPI_Request> reqs(procCount, MPI_REQUEST_NULL);
+
+    for (int workerId = 1; workerId < procCount; ++workerId) {
+        MPI_Request reqUnused = MPI_REQUEST_NULL;
+        jobs[workerId].SendInput(workerId, Async, &reqUnused); // we only care about the return requests
+//        MPI_Request_free(&reqUnused);
+    }
+    printf("Master sent job inputs to all slaves\n");
+
+    jobs[0].ExecuteLocal();
+
+    Output.Resize(Image.Rows(), Image.Cols());
+    Output.CopyFrom(jobs[0].Output);
+
+    for (int workerId = 1; workerId < procCount; ++workerId) {
+        jobs[workerId].RecvOutput(workerId, Async, &reqs[workerId]);
+    }
+    printf("Master recv'd all outputs from all slaves\n");
+
+
+    if (Async) {
+        int doneIndex;
+        MPI_Status doneStatus;
+        const int slavesCount = procCount - 1;
+
+        for (int doneCount = 0; doneCount < slavesCount; ++doneCount) {
+            MPI_Waitany(reqs.size(), &reqs[0], &doneIndex, &doneStatus);
+            // TODO
+            Output.CopyFrom(jobs[doneIndex].Output);
+//            MPI_Request_free(&reqs[doneIndex]);
+        }
+    } else {
+        // all jobs are done at this time if we run sync
+        for (const MasterSubJob& job : jobs) {
+            Output.CopyFrom(job.Output);
+        }
     }
 }

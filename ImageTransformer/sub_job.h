@@ -9,6 +9,10 @@
 #include <utility>
 #include <algorithm>
 #include <variant>
+#include <memory>
+
+#include "mpi.h"
+
 #include "RgbMatrix.h"
 
 /**
@@ -125,14 +129,19 @@ struct MasterSubJob {
     JobDims      Dims;
     const Job&   ImgJob;
     RgbSubMatrix Output;
+    std::unique_ptr<unsigned char[]> InputBuf;
 
     MasterSubJob(const JobDims& dims, const Job& job) : Dims(dims), ImgJob(job), Output() {}
-    MasterSubJob(const MasterSubJob&) = default;
+    MasterSubJob(const MasterSubJob&) = delete;
+    MasterSubJob(MasterSubJob&&) = default;
     MasterSubJob& operator = (const MasterSubJob&) = delete;
+    MasterSubJob& operator = (MasterSubJob&&) = default;
 
-    void SendInput(int workerId);
-    void RecvOutput(int workerId);
+    void SendInput(const int workerId, const bool async, MPI_Request* req);
+    void RecvOutput(const int workerId, const bool async, MPI_Request* req);
     void ExecuteLocal();
+
+    inline void ReleaseBuffers() { InputBuf.reset(); }
 };
 
 struct Header {

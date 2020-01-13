@@ -15,33 +15,42 @@ using namespace std;
 
 #define BYTE_MPI_DATA_TYPE MPI_BYTE
 
-void MasterSubJob::SendInput(int workerId) {
+void MasterSubJob::SendInput(const int workerId, const bool async, MPI_Request* req) {
     Header header(Dims, ImgJob.Op);
 
     const int headerSizeBytes = sizeof(header);
     const int payloadSizeBytes = Dims.Input.ElementsCount() * RgbMatrix::BytesPerElem();
     const int msgSizeBytes = headerSizeBytes + payloadSizeBytes;
 
-    auto buf = make_unique<unsigned char[]>(msgSizeBytes);
+    InputBuf = make_unique<unsigned char[]>(msgSizeBytes);
 
-    unsigned char* headerPtr = buf.get();
-    unsigned char* payloadPtr = buf.get() + headerSizeBytes;
+    unsigned char* headerPtr = InputBuf.get();
+    unsigned char* payloadPtr = InputBuf.get() + headerSizeBytes;
 
     // TODO: Sending the memory representation of the std::variant over network is very questionable, even more
     //       than ignoring the endian-ess of the data involved.
     memcpy(headerPtr, (void*)&header, headerSizeBytes);
     ImgJob.Image.SubImageToBuffer(payloadPtr, Dims.Input);
 
-    MPI_Send(buf.get(), msgSizeBytes, BYTE_MPI_DATA_TYPE, workerId, 0 /*tag*/, MPI_COMM_WORLD);
+    if (async) {
+        MPI_Isend(InputBuf.get(), msgSizeBytes, BYTE_MPI_DATA_TYPE, workerId, 0 /*tag*/, MPI_COMM_WORLD, req);
+    } else {
+        MPI_Send(InputBuf.get(), msgSizeBytes, BYTE_MPI_DATA_TYPE, workerId, 0 /*tag*/, MPI_COMM_WORLD);
+        ReleaseBuffers();
+    }
 }
 
-void MasterSubJob::RecvOutput(int workerId) {
+void MasterSubJob::RecvOutput(const int workerId, const bool async, MPI_Request* req) {
     const int outputSizeBytes = Dims.Output.ElementsCount() * (int)sizeof(Output(0, 0));
 
     Output.Resize(Dims.Output);
-    MPI_Recv(Output.DataPtr(), outputSizeBytes, BYTE_MPI_DATA_TYPE, workerId, 0 /*tag*/, MPI_COMM_WORLD, nullptr /*status*/);
 
-    printf("Master received output of size %d bytes from worker %d.\n", outputSizeBytes, workerId);
+    if (async) {
+        MPI_Irecv(Output.DataPtr(), outputSizeBytes, BYTE_MPI_DATA_TYPE, workerId, 0 /*tag*/, MPI_COMM_WORLD, req);
+    } else {
+        MPI_Recv(Output.DataPtr(), outputSizeBytes, BYTE_MPI_DATA_TYPE, workerId, 0 /*tag*/, MPI_COMM_WORLD, nullptr /*status*/);
+        printf("Master received output of size %d bytes from worker %d.\n", outputSizeBytes, workerId);
+    }
 }
 
 void MasterSubJob::ExecuteLocal() {

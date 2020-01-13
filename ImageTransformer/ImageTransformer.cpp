@@ -5,6 +5,7 @@
 
 #include <omp.h>
 #include <mpi.h>
+#include <unistd.h>
 
 #include "RgbMatrix.h"
 #include "operations.h"
@@ -125,8 +126,9 @@ int main_multi_machine(int argc, char* argv[]) {
 
     if (id == 0) {
 //        Operation op((SepiaParams()));
-        Operation op(BlurParams(5, 50));
+        Operation op(BlurParams(5, 1));
 
+        const bool ASYNC = true;
         const char* DIR  = "../data/";
         const char* BASE = "1920x1080";
         const char* EXT  = ".bmp";
@@ -139,24 +141,11 @@ int main_multi_machine(int argc, char* argv[]) {
 
         RgbMatrix m(inPath);
 
-        Job job(m, op);
+        Job job(m, op, ASYNC);
 
         double startTime = MPI_Wtime();
 
-        std::vector<MasterSubJob> jobs = job.ComputeJobSplits(procCount);
-
-        for (int workerId = 1; workerId < procCount; ++workerId) {
-            jobs[workerId].SendInput(workerId);
-        }
-        printf("Master sent job inputs to all slaves\n");
-
-        jobs[0].ExecuteLocal();
-        for (int workerId = 1; workerId < procCount; ++workerId) {
-            jobs[workerId].RecvOutput(workerId);
-        }
-        printf("Master recv'd all outputs from all slaves\n");
-
-        job.JoinSubJobOutputs(jobs);
+        job.Execute(procCount);
 
         double endTime = MPI_Wtime();
 
