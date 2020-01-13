@@ -24,7 +24,7 @@ private:
     std::vector<MasterSubJob> ComputeJobSplits(int workersCount);
 
     MasterSubJob ComputeJobDims(const SubImageDim& toProcess, int lastRow, int lastCol) const;
-
+    void CopyOutput(const MasterSubJob& job);
 };
 
 #endif //SODIMAGETRANSFORMER_JOB_H

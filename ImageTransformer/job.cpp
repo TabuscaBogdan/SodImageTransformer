@@ -70,7 +70,7 @@ std::vector<MasterSubJob> Job::ComputeJobSplits(int workersCount) {
 void Job::Execute(int procCount) {
     vector<MasterSubJob> jobs = ComputeJobSplits(procCount);
 
-    // reqs[0] is unused
+    // reqs[0] is unused, for simplicity of access
     vector<MPI_Request> reqs(procCount, MPI_REQUEST_NULL);
 
     for (int workerId = 1; workerId < procCount; ++workerId) {
@@ -79,10 +79,11 @@ void Job::Execute(int procCount) {
     }
     printf("Master sent job inputs to all slaves\n");
 
-    jobs[0].ExecuteLocal();
-
     Output.Resize(Image.Rows(), Image.Cols());
-    Output.CopyFrom(jobs[0].Output);
+
+    jobs[0].ExecuteLocal();
+    CopyOutput(jobs[0]);
+
 
     for (int workerId = 1; workerId < procCount; ++workerId) {
         jobs[workerId].RecvOutput(workerId, Async, &reqs[workerId]);
@@ -97,12 +98,16 @@ void Job::Execute(int procCount) {
 
         for (int doneCount = 0; doneCount < slavesCount; ++doneCount) {
             MPI_Waitany(reqs.size(), &reqs[0], &doneIndex, &doneStatus);
-            Output.CopyFrom(jobs[doneIndex].Output);
+            CopyOutput(jobs[doneIndex]);
         }
     } else {
         // all jobs are done at this time if we run sync
         for (const MasterSubJob& job : jobs) {
-            Output.CopyFrom(job.Output);
+            CopyOutput(job);
         }
     }
+}
+
+void Job::CopyOutput(const MasterSubJob& job) {
+    Output.CopyFrom(job.Output);
 }
